@@ -7,7 +7,6 @@ import {
   BookOpen,
   ChevronRight,
   ClipboardList,
-  Command,
   LayoutDashboard,
   LibraryBig,
   ListOrdered,
@@ -20,18 +19,8 @@ import {
 import type { Profile } from "@/lib/types";
 import { Logout } from "./actions";
 import { ThemeToggle } from "./theme-toggle";
-export function Brand({ href = "/dashboard" }: { href?: string }) {
-  return (
-    <Link href={href} className="brand" aria-label="Adaptiva">
-      <span className="brand-mark">
-        <Command size={21} strokeWidth={1.8} />
-      </span>
-      <span>
-        adaptiva<span className="brand-dot">/</span>
-      </span>
-    </Link>
-  );
-}
+import { Brand } from "./brand";
+export { Brand } from "./brand";
 export function Shell({
   actor,
   mode,

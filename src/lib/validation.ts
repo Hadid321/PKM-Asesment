@@ -101,7 +101,20 @@ export const operationInput = z.discriminatedUnion("action", [
   z.object({ action: z.literal("profile"), full_name: text(100) }).strict(),
 ]);
 export const loginInput = z
-  .object({ email: z.email().max(254), password: z.string().min(8).max(128) })
+  .object({
+    email: z
+      .string()
+      .trim()
+      .pipe(
+        z
+          .email("Periksa penulisan alamat email.")
+          .max(254, "Alamat email terlalu panjang."),
+      ),
+    password: z
+      .string()
+      .min(8, "Gunakan kata sandi minimal 8 karakter.")
+      .max(128, "Kata sandi maksimal 128 karakter."),
+  })
   .strict();
 export const registerInput = loginInput
   .extend({ full_name: text(100) })

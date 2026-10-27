@@ -1,8 +1,10 @@
-import { ArrowUpRight, BookOpen, ClipboardList, Users } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, BookOpen } from "lucide-react";
 import { AuthForm } from "./auth-form";
-import { Brand } from "./shell";
-import { ThemeToggle } from "./theme-toggle";
+import { PublicHeader } from "./public-header";
 import { mode } from "@/lib/server/config";
+import styles from "./public.module.css";
+
 export function AuthPage({
   register = false,
   status,
@@ -13,107 +15,102 @@ export function AuthPage({
   let currentMode: "demo" | "supabase";
   try {
     currentMode = mode();
-  } catch (error) {
+  } catch {
     return (
       <div className="status-page">
-        <h1>Konfigurasi perlu dilengkapi</h1>
-        <p>{(error as Error).message}</p>
+        <h1>Ruang belajar sedang disiapkan</h1>
+        <p>
+          Konfigurasi layanan perlu diperiksa oleh pengelola sekolah. Silakan
+          coba kembali nanti.
+        </p>
+        <Link href="/">Kembali ke beranda</Link>
       </div>
     );
   }
   return (
-    <div className="auth-layout">
-      <aside className="auth-story">
-        <Brand href="/login" />
-        <div className="auth-story-content">
-          <div className="auth-kicker">
-            <span />
-            PROGRAM PENGABDIAN MASYARAKAT
-          </div>
+    <div className={styles.publicPage}>
+      <a className="skip-link" href="#auth-main">
+        Langsung ke formulir
+      </a>
+      <PublicHeader auth />
+      <main className={styles.authContent} id="auth-main">
+        <aside className={styles.authIntro}>
+          <p className={styles.eyebrow}>Adaptiva · Untuk siswa dan guru SMA</p>
           <h1>
-            Asesmen yang jelas.
-            <br />
-            <span>
-              Pendampingan <br />
-              yang terarah.
-            </span>
+            Ada ruang <br />
+            untuk <em>belajar lagi.</em>
           </h1>
           <p>
-            Ruang kerja bersama guru dan siswa SMA untuk melihat pemahaman,
-            menyusun latihan, dan menentukan tindak lanjut belajar.
+            Pahami kemajuanmu, pelajari hal yang masih sulit, dan lanjutkan
+            bersama guru.
           </p>
-          <div className="auth-workflow">
+          <div className={styles.authLesson}>
+            <BookOpen size={24} strokeWidth={1.4} />
             <div>
-              <span>01</span>
-              <BookOpen size={20} />
-              <strong>Latihan dari guru</strong>
-              <p>Soal dikelola oleh guru kelas.</p>
-            </div>
-            <div>
-              <span>02</span>
-              <ClipboardList size={20} />
-              <strong>Hasil per topik</strong>
-              <p>Jawaban dan estimasi tersimpan.</p>
-            </div>
-            <div>
-              <span>03</span>
-              <Users size={20} />
-              <strong>Pendampingan kelas</strong>
-              <p>Guru melihat kebutuhan siswanya.</p>
+              <strong>Belajar dengan arah yang jelas</strong>
+              <p>
+                Latihan per topik, pembahasan jawaban, dan saran belajar untuk
+                langkah berikutnya.
+              </p>
             </div>
           </div>
-        </div>
-        <div className="auth-story-footer">
-          <span>ADAPTIVA / MITRA SEKOLAH SMA</span>
-          <ArrowUpRight size={17} />
-        </div>
-      </aside>
-      <main className="auth-main">
-        <div className="auth-topline">
-          <span>
+          <div className={styles.authSubjects}>
+            <span>Matematika</span>
+            <span>Bahasa Indonesia</span>
+            <span>Bahasa Inggris</span>
+          </div>
+        </aside>
+        <section className={styles.authPanel} aria-labelledby="auth-title">
+          <p className={styles.eyebrow}>
             {currentMode === "demo"
-              ? "LINGKUNGAN DEMONSTRASI"
-              : "AKSES SEKOLAH"}
-          </span>
-          <ThemeToggle />
-        </div>
-        <div className="auth-card">
-          <span className="auth-step">
-            {register ? "AKUN SISWA" : "SELAMAT DATANG"}
-          </span>
-          <h2>{register ? "Buat akun siswa." : "Masuk ke Adaptiva."}</h2>
-          <p>
+              ? "Pratinjau lokal"
+              : register
+                ? "Akun siswa"
+                : "Selamat datang kembali"}
+          </p>
+          <h2 id="auth-title">
             {register
-              ? "Daftarkan akun, lalu bergabung ke kelas menggunakan kode dari guru."
-              : currentMode === "demo"
-                ? "Pilih peran untuk mencoba alur siswa atau guru dengan data simulasi."
-                : "Gunakan akun Anda untuk mengakses kelas dan hasil belajar."}
+              ? "Mulai perjalanan belajarmu."
+              : "Masuk ke ruang belajar."}
+          </h2>
+          <p className={styles.authDescription}>
+            {currentMode === "demo"
+              ? "Coba alur belajar dan pendampingan dengan data simulasi."
+              : register
+                ? "Gunakan email aktif untuk menerima tautan konfirmasi akun."
+                : "Gunakan akun yang sudah terdaftar untuk melanjutkan."}
           </p>
           {status === "expired" && (
             <p className="notice">
-              Sesi belum tersedia atau sudah berakhir. Silakan masuk kembali.
+              Silakan masuk untuk membuka kelas dan melanjutkan latihanmu.
             </p>
           )}
           {status === "confirmation-error" && (
-            <p className="form-error">
-              Tautan konfirmasi tidak valid atau kedaluwarsa. Hubungi pengelola
-              sekolah jika Anda membutuhkan bantuan.
+            <p className="form-error" role="alert">
+              Tautan konfirmasi tidak dapat digunakan atau sudah kedaluwarsa.
+              Periksa apakah ada email konfirmasi yang lebih baru. Jika perlu,
+              hubungi pengelola sekolah.
             </p>
           )}
           <AuthForm mode={currentMode} register={register} />
-          <div className="auth-privacy">
-            <span className="program-dot" />
-            <p>
-              {currentMode === "demo"
-                ? "Data demo disimpan di komputer ini. Gunakan akun sekolah pada mode Supabase untuk kegiatan pendampingan sebenarnya."
-                : "Akun guru disiapkan oleh pengelola. Pendaftaran mandiri hanya tersedia untuk siswa."}
-            </p>
+          <div className={styles.authHelp}>
+            {currentMode === "demo" ? (
+              <p>Pratinjau menggunakan data simulasi di komputer ini.</p>
+            ) : (
+              <p>
+                <strong>Untuk guru</strong>Akun disiapkan oleh pengelola
+                sekolah. Gunakan halaman masuk setelah menerima akun.
+              </p>
+            )}
           </div>
-        </div>
-        <div className="auth-bottomline">
-          Asesmen formatif. Hasil model membantu pendampingan guru.
-        </div>
+        </section>
       </main>
+      <footer className={styles.authFooter}>
+        <span>Setiap hasil latihan adalah bahan untuk belajar kembali.</span>
+        <Link href="/">
+          Tentang Adaptiva <ArrowUpRight size={14} />
+        </Link>
+      </footer>
     </div>
   );
 }

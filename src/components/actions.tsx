@@ -2,6 +2,15 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LoaderCircle, LogOut, Copy, Check } from "lucide-react";
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public field?: string,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
 export async function post<
   T = { message?: string; redirect?: string; session_id?: string },
 >(url: string, body: unknown): Promise<T> {
@@ -15,13 +24,23 @@ export async function post<
   } catch {
     throw new Error("Koneksi terputus. Periksa jaringan, lalu coba lagi.");
   }
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ApiRequestError(
+      "Layanan belum memberikan respons yang dapat dibaca. Coba lagi beberapa saat.",
+    );
+  }
   if (!response.ok) {
     if (response.status === 401 && !url.startsWith("/api/auth"))
       window.location.assign(
         new URL("/login?status=expired", window.location.origin).href,
       );
-    throw new Error(data.error || "Permintaan belum dapat diproses.");
+    throw new ApiRequestError(
+      data.error || "Permintaan belum dapat diproses.",
+      typeof data.field === "string" ? data.field : undefined,
+    );
   }
   return data as T;
 }

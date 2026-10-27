@@ -1,9 +1,20 @@
 "use client";
 import Link from "next/link";
-import { useState, useSyncExternalStore, type FormEvent } from "react";
-import { ArrowRight, GraduationCap, Users, Eye, EyeOff } from "lucide-react";
-import { post } from "./actions";
+import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import {
+  ArrowRight,
+  GraduationCap,
+  Users,
+  Eye,
+  EyeOff,
+  MailCheck,
+  LoaderCircle,
+} from "lucide-react";
+import { ApiRequestError, post } from "./actions";
 import { loginInput, registerInput } from "@/lib/validation";
+import styles from "./public.module.css";
+type FieldName = "full_name" | "email" | "password";
+const fields: FieldName[] = ["full_name", "email", "password"];
 const subscribeToReady = () => () => {};
 const clientReady = () => true;
 const serverReady = () => false;
@@ -23,20 +34,35 @@ export function AuthForm({
     [error, setError] = useState(""),
     [status, setStatus] = useState(""),
     [visible, setVisible] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<FieldName, string>>
+  >({});
+  const formRef = useRef<HTMLFormElement>(null);
+  function focusField(name: FieldName) {
+    const input = formRef.current?.elements.namedItem(name);
+    if (input instanceof HTMLInputElement) input.focus();
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setBusy(true);
+    if (busy) return;
     setError("");
     setStatus("");
+    setFieldErrors({});
     const values = Object.fromEntries(new FormData(event.currentTarget));
     const parsed = (register ? registerInput : loginInput).safeParse(values);
     if (!parsed.success) {
-      setError(
-        "Periksa nama, format email, dan kata sandi minimal 8 karakter.",
-      );
-      setBusy(false);
+      const errors: Partial<Record<FieldName, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as FieldName;
+        if (fields.includes(field) && !errors[field])
+          errors[field] = issue.message;
+      }
+      setFieldErrors(errors);
+      const first = fields.find((field) => errors[field]);
+      if (first) focusField(first);
       return;
     }
+    setBusy(true);
     try {
       const data = await post(
         `/api/auth/${register ? "register" : "login"}`,
@@ -45,7 +71,15 @@ export function AuthForm({
       if (data.redirect) window.location.assign(data.redirect);
       else setStatus(data.message || "Berhasil.");
     } catch (e) {
-      setError((e as Error).message);
+      if (
+        e instanceof ApiRequestError &&
+        fields.includes(e.field as FieldName)
+      ) {
+        const field = e.field as FieldName;
+        setFieldErrors({ [field]: e.message });
+        // Tunggu field diaktifkan kembali sebelum mengembalikan fokus.
+        requestAnimationFrame(() => focusField(field));
+      } else setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -102,46 +136,117 @@ export function AuthForm({
           </button>
           {busy && <p role="status">Menyiapkan ruang belajar…</p>}
         </div>
+      ) : register && status ? (
+        <div className={styles.confirmation} role="status" aria-live="polite">
+          <MailCheck size={28} strokeWidth={1.5} />
+          <h3>Periksa emailmu</h3>
+          <p>{status}</p>
+          <Link className="btn secondary full" href="/login">
+            Ke halaman masuk <ArrowRight size={16} />
+          </Link>
+        </div>
       ) : (
-        <form className="stack" onSubmit={submit}>
+        <form
+          ref={formRef}
+          className="stack"
+          onSubmit={submit}
+          noValidate
+          aria-busy={busy}
+          onChange={(event) => {
+            if (!(event.target instanceof HTMLInputElement)) return;
+            const name = event.target.name as FieldName;
+            if (fields.includes(name))
+              setFieldErrors((current) => ({ ...current, [name]: undefined }));
+            setError("");
+          }}
+        >
           {register && (
-            <label>
-              Nama lengkap
+            <div className={styles.fieldGroup}>
+              <label htmlFor="auth-full-name">Nama lengkap</label>
               <input
                 name="full_name"
+                id="auth-full-name"
                 required
+                disabled={busy}
                 maxLength={100}
                 autoComplete="name"
-                placeholder="Nama lengkap Anda"
+                placeholder="Nama yang digunakan di kelas"
+                aria-invalid={!!fieldErrors.full_name}
+                aria-describedby={
+                  fieldErrors.full_name ? "auth-name-error" : undefined
+                }
               />
-            </label>
+              {fieldErrors.full_name && (
+                <span
+                  id="auth-name-error"
+                  className={styles.fieldError}
+                  role="alert"
+                >
+                  {fieldErrors.full_name}
+                </span>
+              )}
+            </div>
           )}
-          <label>
-            Email
+          <div className={styles.fieldGroup}>
+            <label htmlFor="auth-email">Email</label>
             <input
               name="email"
+              id="auth-email"
               type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              spellCheck={false}
               required
+              disabled={busy}
               maxLength={254}
               autoComplete="email"
-              placeholder="nama@sekolah.sch.id"
+              placeholder="Alamat email aktif"
+              aria-invalid={!!fieldErrors.email}
+              aria-describedby={
+                `${register ? "auth-email-hint " : ""}${fieldErrors.email ? "auth-email-error" : ""}`.trim() ||
+                undefined
+              }
             />
-          </label>
-          <label>
-            Kata sandi
+            {fieldErrors.email && (
+              <span
+                id="auth-email-error"
+                className={styles.fieldError}
+                role="alert"
+              >
+                {fieldErrors.email}
+              </span>
+            )}
+            {register && (
+              <span id="auth-email-hint" className={styles.fieldHint}>
+                Gunakan email yang bisa kamu buka untuk konfirmasi akun.
+              </span>
+            )}
+          </div>
+          <div className={styles.fieldGroup}>
+            <label htmlFor="auth-password">Kata sandi</label>
             <span className="password-field">
               <input
                 name="password"
+                id="auth-password"
                 type={visible ? "text" : "password"}
                 required
+                disabled={busy}
                 minLength={8}
                 maxLength={128}
                 autoComplete={register ? "new-password" : "current-password"}
-                placeholder="Minimal 8 karakter"
+                placeholder={
+                  register ? "Buat kata sandi" : "Masukkan kata sandi"
+                }
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={
+                  `${register ? "auth-password-hint " : ""}${fieldErrors.password ? "auth-password-error" : ""}`.trim() ||
+                  undefined
+                }
               />
               <button
                 type="button"
-                disabled={!ready}
+                disabled={!ready || busy}
+                aria-pressed={visible}
                 aria-label={
                   visible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"
                 }
@@ -150,10 +255,40 @@ export function AuthForm({
                 {visible ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </span>
-          </label>
+            {fieldErrors.password && (
+              <span
+                id="auth-password-error"
+                className={styles.fieldError}
+                role="alert"
+              >
+                {fieldErrors.password}
+              </span>
+            )}
+            {register && (
+              <span id="auth-password-hint" className={styles.fieldHint}>
+                Minimal 8 karakter. Hindari nama atau kata sandi yang mudah
+                ditebak.
+              </span>
+            )}
+          </div>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <button className="btn primary full" disabled={busy || !ready}>
-            {busy ? "Memproses…" : register ? "Buat akun siswa" : "Masuk"}
-            <ArrowRight size={17} />
+            {busy
+              ? register
+                ? "Mendaftarkan akun…"
+                : "Sedang masuk…"
+              : register
+                ? "Buat akun siswa"
+                : "Masuk"}
+            {busy ? (
+              <LoaderCircle className="spin" size={17} />
+            ) : (
+              <ArrowRight size={17} />
+            )}
           </button>
           <p className="auth-switch">
             {register ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
@@ -161,19 +296,14 @@ export function AuthForm({
               {register ? "Masuk" : "Daftar sebagai siswa"}
             </Link>
           </p>
-          {register && (
-            <small className="muted">
-              Akun guru hanya disiapkan oleh administrator.
-            </small>
-          )}
         </form>
       )}
-      {error && (
+      {error && mode === "demo" && (
         <p className="form-error" role="alert">
           {error}
         </p>
       )}
-      {status && (
+      {status && !register && (
         <p className="form-success" role="status">
           {status}
         </p>

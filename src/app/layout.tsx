@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
   title: {
-    default: "Adaptiva — Ruang belajar adaptif",
+    default: "Adaptiva — Ruang belajar SMA",
     template: "%s | Adaptiva",
   },
   description:
-    "Platform asesmen dan pendampingan belajar untuk program pengabdian kepada masyarakat bersama mitra SMA.",
+    "Latihan Matematika, Bahasa Indonesia, dan Bahasa Inggris kelas XII dengan pembahasan dan pendampingan guru.",
   robots: { index: false, follow: false },
 };
 export default function RootLayout({
