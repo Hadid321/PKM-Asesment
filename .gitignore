@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.data/
+.env*
+!.env.example
+*.tsbuildinfo
+coverage/
+.vercel/
+supabase/.temp/
+test-results/
