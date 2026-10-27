@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Brand } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
+import { TextSizeToggle } from "./text-size-toggle";
 import styles from "./public.module.css";
 
 export function PublicHeader({ auth = false }: { auth?: boolean }) {
@@ -16,6 +17,7 @@ export function PublicHeader({ auth = false }: { auth?: boolean }) {
           <Link href="/" className={styles.backLink}>
             <ArrowLeft size={16} /> Beranda
           </Link>
+          <TextSizeToggle />
           <ThemeToggle />
         </nav>
       ) : (
@@ -26,6 +28,7 @@ export function PublicHeader({ auth = false }: { auth?: boolean }) {
             <a href="#untuk-guru">Untuk guru</a>
           </nav>
           <div className={styles.headerActions}>
+            <TextSizeToggle />
             <ThemeToggle />
             <Link href="/login" className={styles.headerLogin}>
               Masuk <span aria-hidden="true">↗</span>

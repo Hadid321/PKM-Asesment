@@ -1,6 +1,6 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link, { useLinkStatus } from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
@@ -19,8 +19,21 @@ import {
 import type { Profile } from "@/lib/types";
 import { Logout } from "./actions";
 import { ThemeToggle } from "./theme-toggle";
+import { TextSizeToggle } from "./text-size-toggle";
+import { selectedSubject, subjectHref } from "@/lib/subjects";
 import { Brand } from "./brand";
 export { Brand } from "./brand";
+function NavigationHint() {
+  const { pending } = useLinkStatus();
+  return (
+    <span className={`navigation-hint ${pending ? "is-pending" : ""}`}>
+      <span className="navigation-spinner" aria-hidden="true" />
+      <span className="sr-only" role="status">
+        {pending ? "Memuat halaman…" : ""}
+      </span>
+    </span>
+  );
+}
 export function Shell({
   actor,
   mode,
@@ -31,6 +44,7 @@ export function Shell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const subject = selectedSubject(useSearchParams().get("mapel"));
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -110,7 +124,7 @@ export function Shell({
         <nav aria-label="Navigasi utama">
           {items.map((i) => (
             <Link
-              href={i.href}
+              href={subjectHref(i.href, subject)}
               key={i.href}
               className={pathname.startsWith(i.href) ? "active" : ""}
               aria-current={pathname.startsWith(i.href) ? "page" : undefined}
@@ -118,6 +132,7 @@ export function Shell({
             >
               <i.icon size={18} strokeWidth={1.7} />
               <span>{i.label}</span>
+              <NavigationHint />
             </Link>
           ))}
         </nav>
@@ -165,6 +180,7 @@ export function Shell({
               <span />
               {mode === "demo" ? "Demo lokal" : "Data sekolah"}
             </span>
+            <TextSizeToggle />
             <ThemeToggle />
             <Link
               href="/profil"
@@ -199,7 +215,9 @@ export function Shell({
           </div>
         )}
         <main id="main" className="main-content">
-          {children}
+          <div key={pathname} className="page-enter">
+            {children}
+          </div>
         </main>
         <footer className="app-footer">
           <span>Adaptiva / Program pengabdian kepada masyarakat</span>

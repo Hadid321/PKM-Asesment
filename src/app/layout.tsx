@@ -21,7 +21,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "var t;try{t=localStorage.getItem('adaptiva-theme')}catch{}document.documentElement.dataset.theme=t==='dark'||t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'",
+              "var t,s;try{t=localStorage.getItem('adaptiva-theme');s=localStorage.getItem('adaptiva-text-size')}catch{}document.documentElement.dataset.theme=t==='dark'||t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.textSize=s==='large'?'large':'standard'",
           }}
         />
       </head>

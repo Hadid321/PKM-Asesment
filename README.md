@@ -38,6 +38,8 @@ Untuk mengulang presentasi dari dataset awal: hentikan semua server, pindahkan `
 
 Semua fungsi inti berjalan tanpa LLM. Integrasi eksternal disediakan dalam kode; lihat [verifikasi pembaruan tiga mapel](docs/VERIFIKASI-2026-10-27.md) dan [skenario layanan eksternal](docs/VERIFIKASI.md) untuk membedakan pengujian lokal dan layanan yang belum diuji.
 
+Navigasi mapel kini berjalan dari DTO pengguna yang sudah dimuat pada ringkasan, latihan, rekomendasi, rekap, dan paket guru. Tersedia tombol Aa untuk teks besar, tema konsisten, serta animasi yang mengikuti preferensi pengurangan gerak. Lihat [hasil verifikasi navigasi dan keterbacaan](docs/VERIFIKASI-NAVIGASI-DAN-KETERBACAAN.md).
+
 ## Arsitektur dan struktur
 
 Next.js App Router + React + TypeScript strict + Tailwind CSS + Lucide. Route Handlers memakai Zod. Browser mengirim pilihan A/B/C/D, ID soal dan ID sesi; identitas pengguna berasal dari sesi yang diverifikasi, bukan request body.

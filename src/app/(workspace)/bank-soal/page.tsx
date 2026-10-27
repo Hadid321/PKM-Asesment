@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { Upload } from "lucide-react";
-import { pageData } from "@/lib/server/page-data";
-import { repository } from "@/lib/server/repository";
+import { pageData, pageState } from "@/lib/server/page-data";
 import { PageTitle } from "@/components/ui";
 import { QuestionManager } from "@/components/teacher-forms";
 export default async function Bank() {
   const data = await pageData("teacher");
-  const state = await repository().read(data.actor);
+  const state = await pageState();
   return (
     <>
       <PageTitle
