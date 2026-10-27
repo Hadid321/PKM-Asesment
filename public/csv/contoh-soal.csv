@@ -1,0 +1,5 @@
+﻿topik,pertanyaan,opsi_a,opsi_b,opsi_c,opsi_d,kunci,kesulitan,pembahasan
+"limit-fungsi","Nilai lim x→3 (4x + 2) adalah …","10","12","14","16","C","mudah","Substitusikan x = 3 sehingga 4(3) + 2 = 14."
+"turunan-fungsi","Jika f(x) = x² + 5x, nilai f′(2) adalah …","7","9","11","13","B","sedang","Turunannya f′(x) = 2x + 5. Pada x = 2, nilainya 9."
+"integral-dasar","Nilai ∫ dari 0 sampai 1 untuk 12x² dx adalah …","2","3","4","6","C","sedang","Antiturunan 12x² adalah 4x³. Maka [4x³]₀¹ = 4."
+"peluang-kejadian","Satu dadu adil dilempar. Peluang muncul angka genap adalah …","1/6","1/3","1/2","2/3","C","mudah","Angka genap adalah 2, 4, 6. Ada 3 dari 6 hasil yang sama mungkin, maka peluangnya 1/2."
