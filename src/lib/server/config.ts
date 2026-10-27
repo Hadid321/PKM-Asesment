@@ -21,3 +21,46 @@ export function supabaseConfig() {
     );
   return { url, key };
 }
+
+// Pemeriksaan bentuk konfigurasi; validitas key tetap diperiksa oleh Supabase.
+export function supabaseServerConfig() {
+  const { url } = supabaseConfig();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  let legacyRole: unknown;
+  try {
+    legacyRole = JSON.parse(
+      Buffer.from(key?.split(".")[1] ?? "", "base64url").toString("utf8"),
+    ).role;
+  } catch {
+    // Secret key modern tidak berbentuk JWT.
+  }
+  if (
+    !key ||
+    /ISI_|YOUR_|PLACEHOLDER|CHANGEME/i.test(key) ||
+    (!/^sb_secret_[A-Za-z0-9_-]+$/.test(key) && legacyRole !== "service_role")
+  )
+    throw new AppError(
+      "SUPABASE_SERVICE_ROLE_KEY pada server harus berisi secret key atau legacy service_role yang valid.",
+      503,
+    );
+  return { url, key };
+}
+
+export function applicationOrigin() {
+  try {
+    const url = new URL(process.env.APP_URL || "http://127.0.0.1:3000");
+    if (
+      !["http:", "https:"].includes(url.protocol) ||
+      url.username ||
+      url.password ||
+      (process.env.VERCEL && url.protocol !== "https:")
+    )
+      throw new Error("Invalid origin");
+    return url.origin;
+  } catch {
+    throw new AppError(
+      "APP_URL pada server belum sesuai alamat aplikasi.",
+      503,
+    );
+  }
+}

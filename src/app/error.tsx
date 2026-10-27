@@ -1,13 +1,16 @@
 "use client";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
     <div className="status-page">
+      <ThemeToggle />
       <span className="status-symbol">!</span>
       <h1>Halaman belum dapat dimuat</h1>
       <p>
-        Periksa koneksi atau konfigurasi Supabase di server. Mode yang dipilih
-        tidak diganti secara otomatis.
+        Data belajar belum dapat ditampilkan. Coba muat ulang beberapa saat
+        lagi. Jika masih terjadi, hubungi pengelola sekolah untuk memeriksa
+        layanan.
       </p>
       <button className="btn primary" onClick={reset}>
         Coba lagi

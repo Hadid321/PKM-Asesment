@@ -98,6 +98,16 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  // Helper dapat tidak tersedia pada instalasi lokal. Migration harus aman diulang.
+  const hardening = await readFile(
+    "supabase/migrations/20261027121633_restrict_auto_rls_function_access.sql",
+    "utf8",
+  );
+  await db.exec(hardening);
+  await db.exec(
+    "create function public.rls_auto_enable() returns void language sql security definer as $$ select $$;",
+  );
+  await db.exec(hardening);
 }, 60000);
 beforeEach(async () => {
   await db.exec("begin");
@@ -109,6 +119,41 @@ afterAll(async () => {
   await db?.close();
 });
 describe("Migration dan RLS pada PostgreSQL lokal PGlite", () => {
+  it("helper administratif auto-RLS tidak dapat dieksekusi anon atau authenticated", async () => {
+    const result = await db.query<{
+      anon: boolean;
+      authenticated: boolean;
+      owner: boolean;
+    }>(
+      "select has_function_privilege('anon','public.rls_auto_enable()','execute') as anon, has_function_privilege('authenticated','public.rls_auto_enable()','execute') as authenticated, has_function_privilege(current_user,'public.rls_auto_enable()','execute') as owner",
+    );
+    expect(result.rows[0]).toEqual({
+      anon: false,
+      authenticated: false,
+      owner: true,
+    });
+  });
+  it("30 profil siswa baru mendapat dashboard sendiri tanpa akun atau data teman", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const id = crypto.randomUUID();
+      ids.push(id);
+      await db.query(
+        "insert into auth.users(id,raw_user_meta_data) values($1,$2)",
+        [id, JSON.stringify({ full_name: `Siswa ${i}`, role: "teacher" })],
+      );
+    }
+    await asService();
+    for (const id of ids) {
+      const { state } = await stateFor(id);
+      expect(state.profiles).toHaveLength(1);
+      expect(state.profiles[0]).toMatchObject({ id, role: "student" });
+      expect(state.topics).toHaveLength(16);
+      expect(state.attempts).toHaveLength(0);
+      expect(state.questions).toHaveLength(0);
+      expect(state.classes).toHaveLength(0);
+    }
+  });
   it("migration tiga mapel menjaga topik lama dan menandai kalkulus sebagai pengayaan", async () => {
     const topics = await db.query<{ subject: string; count: number }>(
       "select subject,count(*)::integer as count from public.topics group by subject order by subject",

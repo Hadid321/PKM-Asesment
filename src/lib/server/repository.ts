@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { demoState, DEMO_TEACHER } from "../demo/seed";
-import { mode, supabaseConfig } from "./config";
+import { mode, supabaseServerConfig } from "./config";
 import { AppError, ensure } from "../domain/errors";
 import { TABLES, type Profile, type State } from "../types";
 import { snapshotSchema, stateSchema } from "../state-schema";
@@ -139,13 +139,7 @@ export const demoRepository: Repository = {
 };
 // Hanya dipanggil setelah requireActor(); tidak diekspor ke Route Handler.
 function administrativeClient() {
-  const { url } = supabaseConfig();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key)
-    throw new AppError(
-      "SUPABASE_SERVICE_ROLE_KEY belum diisi pada server.",
-      503,
-    );
+  const { url, key } = supabaseServerConfig();
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -159,11 +153,13 @@ async function snapshot(actor: Profile): Promise<Snapshot> {
     "read_assessment_state",
     { actor_id: actor.id },
   );
-  if (error)
+  if (error) {
+    console.error("assessment_database_read_failed", { code: error.code });
     throw new AppError(
       "Database belum siap atau tidak dapat diakses. Periksa migration dan konfigurasi server.",
       503,
     );
+  }
   const parsed = snapshotSchema.safeParse(data);
   ensure(
     parsed.success,

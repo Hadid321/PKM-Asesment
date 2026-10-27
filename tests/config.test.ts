@@ -1,9 +1,47 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mode, supabaseConfig } from "@/lib/server/config";
+import {
+  applicationOrigin,
+  mode,
+  supabaseConfig,
+  supabaseServerConfig,
+} from "@/lib/server/config";
 import { stateSchema } from "@/lib/state-schema";
 import { demoState } from "@/lib/demo/seed";
 afterEach(() => vi.unstubAllEnvs());
 describe("Mode eksplisit dan konfigurasi", () => {
+  it.each(["", "ISI_SECRET_KEY_SUPABASE_DI_SINI", "sb_publishable_local_test"])(
+    "menolak key administratif kosong, placeholder, atau publishable: %s",
+    (key) => {
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co");
+      vi.stubEnv(
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        "sb_publishable_local_test",
+      );
+      vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", key);
+      expect(() => supabaseServerConfig()).toThrow("SUPABASE_SERVICE_ROLE_KEY");
+    },
+  );
+  it("mengenali bentuk secret modern dan legacy service_role tanpa memverifikasi kredensial", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://test.supabase.co");
+    vi.stubEnv(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "sb_publishable_local_test",
+    );
+    const legacy = (role: string) =>
+      `local.${Buffer.from(JSON.stringify({ role })).toString("base64url")}.test`;
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", legacy("anon"));
+    expect(() => supabaseServerConfig()).toThrow("SUPABASE_SERVICE_ROLE_KEY");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", legacy("service_role"));
+    expect(supabaseServerConfig().key).toBe(legacy("service_role"));
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "sb_secret_local_test");
+    expect(supabaseServerConfig().key).toBe("sb_secret_local_test");
+  });
+  it("URL callback berasal dari APP_URL dan menolak skema selain HTTP(S)", () => {
+    vi.stubEnv("APP_URL", "https://sekolah.example.org/");
+    expect(applicationOrigin()).toBe("https://sekolah.example.org");
+    vi.stubEnv("APP_URL", "javascript:alert(1)");
+    expect(() => applicationOrigin()).toThrow("APP_URL");
+  });
   it("memeriksa data eksternal dan menolak probabilitas rusak", () => {
     const state = demoState();
     expect(stateSchema.safeParse(state).success).toBe(true);

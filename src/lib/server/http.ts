@@ -1,6 +1,7 @@
 import "server-only";
 import { ZodError } from "zod";
 import { AppError, ensure } from "../domain/errors";
+import { applicationOrigin } from "./config";
 const buckets = new Map<string, { count: number; until: number }>();
 export function rateLimit(key: string, limit = 60) {
   const now = Date.now();
@@ -21,8 +22,7 @@ export function rateLimit(key: string, limit = 60) {
 export async function readJson(request: Request) {
   const origin = request.headers.get("origin");
   // Next dapat memakai host internal berbeda pada Request.url; gunakan origin konfigurasi tetap.
-  const expectedOrigin = new URL(process.env.APP_URL || "http://127.0.0.1:3000")
-    .origin;
+  const expectedOrigin = applicationOrigin();
   ensure(origin === expectedOrigin, "Asal permintaan tidak diizinkan.", 403);
   ensure(
     request.headers.get("content-type")?.includes("application/json"),
