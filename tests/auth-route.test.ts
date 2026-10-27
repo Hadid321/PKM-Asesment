@@ -25,6 +25,7 @@ function call(
   action: string,
   body: unknown,
   origin = "https://sekolah.example.org",
+  ip = crypto.randomUUID(),
 ) {
   return POST(
     new Request(`https://sekolah.example.org/api/auth/${action}`, {
@@ -32,7 +33,7 @@ function call(
       headers: {
         Origin: origin,
         "Content-Type": "application/json",
-        "x-forwarded-for": crypto.randomUUID(),
+        "x-forwarded-for": ip,
       },
       body: JSON.stringify(body),
     }),
@@ -70,11 +71,28 @@ describe("Registrasi dan masuk Supabase", () => {
     expect(mocks.signUp).toHaveBeenCalledWith({
       email: student.email,
       password: student.password,
-      options: { data: { full_name: student.full_name } },
+      options: {
+        data: { full_name: student.full_name },
+        emailRedirectTo: "https://sekolah.example.org/auth/confirm",
+      },
     });
     const response = await call("register", { ...student, role: "teacher" });
     expect(response.status).toBe(400);
     expect(mocks.signUp).toHaveBeenCalledTimes(1);
+  });
+  it("30 pendaftaran dari jaringan sekolah tidak ditolak limiter aplikasi", async () => {
+    mocks.signUp.mockResolvedValue({ data: { session: null }, error: null });
+    const ip = crypto.randomUUID();
+    for (let i = 0; i < 30; i++) {
+      const response = await call(
+        "register",
+        { ...student, email: `siswa${i}@example.org` },
+        "https://sekolah.example.org",
+        ip,
+      );
+      expect(response.status).toBe(200);
+    }
+    expect(mocks.signUp).toHaveBeenCalledTimes(30);
   });
   it("menjelaskan penolakan alamat email tanpa mengekspos pesan provider", async () => {
     mocks.signUp.mockResolvedValue({

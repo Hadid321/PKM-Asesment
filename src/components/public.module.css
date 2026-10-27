@@ -285,6 +285,7 @@
   max-width: 1224px;
   margin: 10px auto 72px;
   background: var(--panel);
+  border: 1px solid var(--panel-line);
   color: var(--on-panel);
   padding: 48px;
   display: grid;
@@ -313,7 +314,7 @@
   align-items: center;
   gap: 20px;
   font-size: 14px;
-  border-bottom: 1px solid #ffffff50;
+  border-bottom: 1px solid var(--panel-line);
   padding-bottom: 9px;
 }
 .teacherLink:hover {

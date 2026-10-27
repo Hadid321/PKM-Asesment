@@ -68,10 +68,12 @@ Lihat [dokumen BKT](docs/BKT.md), [arsitektur keamanan](docs/KEAMANAN.md), dan [
 ## Menghubungkan Supabase
 
 1. Buat proyek sendiri di [Supabase](https://supabase.com/dashboard), pilih paket **Free**, simpan password database secara privat. Aplikasi ini tidak membuat akun, membeli layanan, atau mengubah proyek Anda otomatis.
-2. Di SQL Editor proyek baru, jalankan ketiga berkas pada `supabase/migrations/` sesuai urutan nama. Jika skema lama sudah dipasang, jalankan hanya migration lanjutan yang belum diterapkan. Jangan menjalankan ulang core pada tabel yang sudah ada. `supabase/seed.sql` opsional untuk konten pengembangan; tidak membuat akun atau hasil siswa. Soal sekolah disediakan guru melalui editor, unggah CSV, atau paket yang ditinjau. Seed tanpa pemilik guru tidak disajikan otomatis. Migration tiga mapel menambah metadata dan topik, bukan otomatis menerbitkan 72 soal.
+2. Di SQL Editor proyek baru, jalankan semua berkas pada `supabase/migrations/` sesuai urutan nama. Jika skema lama sudah dipasang, jalankan hanya migration lanjutan yang belum diterapkan. Jangan menjalankan ulang core pada tabel yang sudah ada. `supabase/seed.sql` opsional untuk konten pengembangan; tidak membuat akun atau hasil siswa. Soal sekolah disediakan guru melalui editor, unggah CSV, atau paket yang ditinjau. Seed tanpa pemilik guru tidak disajikan otomatis. Migration tiga mapel menambah metadata dan topik, bukan otomatis menerbitkan 72 soal.
 3. Salin URL proyek, publishable key, dan **service role key** dari pengaturan API ke `.env.local`. Service role key tidak boleh dipublikasikan. RLS membatasi akses langsung Data API; penulisan asesmen memakai RPC administratif yang hanya bisa dipanggil service role setelah server memverifikasi pengguna dan otorisasinya.
 4. Pilih `APP_MODE=supabase`. Jika konfigurasi salah, aplikasi menampilkan kegagalan konfigurasi; data sekolah tidak diganti dengan demo secara diam-diam.
 5. Aktifkan provider email/password dan email confirmation. Atur **Site URL** dan redirect allowlist ke `http://127.0.0.1:3000` untuk lokal, atau origin HTTPS hosting Anda. Di template **Confirm signup**, gunakan tautan `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`. Route ini hanya menerima jenis `email` dan tidak menerima redirect bebas.
+Panduan khusus domain PKM, key Vercel, callback email, dan batas pendaftaran satu kelas tersedia di [konfigurasi produksi](docs/PRODUKSI-PKM.md).
+
 6. Restart aplikasi. Daftarkan akun siswa dan uji konfirmasi serta login. Untuk uji kelas, siapkan guru dengan prosedur di bawah.
 
 ### Email pendaftaran dan penanganan error

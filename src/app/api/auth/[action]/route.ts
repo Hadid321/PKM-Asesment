@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { enterDemo, signOut } from "@/lib/server/auth";
-import { mode } from "@/lib/server/config";
+import { applicationOrigin, mode } from "@/lib/server/config";
 import { apiError, json, rateLimit, readJson } from "@/lib/server/http";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { loginInput, registerInput } from "@/lib/validation";
@@ -19,7 +19,7 @@ export async function POST(
     const { action } = await context.params;
     rateLimit(
       `auth:${request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local"}`,
-      25,
+      60,
     );
     if (action === "logout") {
       await signOut();
@@ -54,7 +54,10 @@ export async function POST(
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name } },
+        options: {
+          data: { full_name },
+          emailRedirectTo: new URL("/auth/confirm", applicationOrigin()).href,
+        },
       });
       if (error && !isExistingRegistration(error)) {
         const { status, ...body } = authFailure(error, "register");
