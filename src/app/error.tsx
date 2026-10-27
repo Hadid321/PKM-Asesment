@@ -1,10 +1,14 @@
 "use client";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TextSizeToggle } from "@/components/text-size-toggle";
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
     <div className="status-page">
-      <ThemeToggle />
+      <div className="reading-controls">
+        <TextSizeToggle />
+        <ThemeToggle />
+      </div>
       <span className="status-symbol">!</span>
       <h1>Halaman belum dapat dimuat</h1>
       <p>

@@ -11,8 +11,20 @@ export const pageActor = cache(async () => {
   if (!actor) redirect("/login?status=expired");
   return actor;
 });
+export async function requirePageRole(role: Role) {
+  const actor = await pageActor();
+  if (actor.role !== role) redirect("/akses");
+  return actor;
+}
+export const pageState = cache(async () =>
+  repository().read(await pageActor()),
+);
 export async function pageData(role?: Role, subject?: Subject) {
   const actor = await pageActor();
   if (role && actor.role !== role) redirect("/akses");
-  return dashboard(repository(), actor, subject);
+  return dashboard(
+    { ...repository(), read: () => pageState() },
+    actor,
+    subject,
+  );
 }

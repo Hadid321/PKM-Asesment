@@ -435,7 +435,9 @@ export function TeacherDashboard({ data }: { data: DashboardData }) {
               <h2>Penguasaan per topik</h2>
               <p>Rata-rata kelas. Siswa tanpa riwayat memakai prior model.</p>
             </div>
-            <TextLink href="/rekap">Detail</TextLink>
+            <TextLink href={`/rekap?mapel=${data.subject ?? "matematika"}`}>
+              Detail
+            </TextLink>
           </div>
           {data.students.length ? (
             <TopicBars teacher data={data} />
@@ -462,7 +464,9 @@ export function TeacherDashboard({ data }: { data: DashboardData }) {
                 Angka ini menyertakan prior untuk siswa yang belum berlatih.
                 Tinjau jawaban per siswa sebelum menentukan tindak lanjut.
               </p>
-              <TextLink href="/rekap">Tinjau hasil siswa</TextLink>
+              <TextLink href={`/rekap?mapel=${data.subject ?? "matematika"}`}>
+                Tinjau hasil siswa
+              </TextLink>
             </>
           ) : (
             <Empty>Ringkasan tersedia setelah siswa bergabung.</Empty>
