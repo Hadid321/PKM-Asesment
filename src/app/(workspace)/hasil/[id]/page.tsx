@@ -4,7 +4,8 @@ import { redirect, notFound } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { pageActor } from "@/lib/server/page-data";
 import { repository } from "@/lib/server/repository";
-import { dashboard, quizView } from "@/lib/server/assessment";
+import { quizView } from "@/lib/server/assessment";
+import { subjectHref } from "@/lib/subjects";
 import { AppError } from "@/lib/domain/errors";
 import {
   Badge,
@@ -36,8 +37,7 @@ export default async function Result({
     throw e;
   }
   if (data.session.status !== "completed") redirect(`/kuis/${id}`);
-  const summary = await dashboard(repository(), actor);
-  const next = summary.recommendations[0];
+  const next = data.recommendations[0];
   const correct = data.attempts.filter((a) => a.is_correct).length;
   return (
     <>
@@ -79,19 +79,24 @@ export default async function Result({
         </div>
       </Card>
       <Card className="mt">
-        <Badge tone="green">
-          {data.session.summary_source === "groq"
-            ? "Penjelasan tambahan oleh Groq"
-            : "Ringkasan otomatis berbasis hasil asesmen"}
-        </Badge>
-        <p className="summary-text">{data.session.summary}</p>
+        <Badge tone="green">Ringkasan otomatis berbasis hasil asesmen</Badge>
+        <p className="summary-text">{data.summary}</p>
+        <p className="small muted">
+          Saran berikutnya mengikuti soal yang tersedia di kelasmu saat ini.
+        </p>
+        {data.session.summary_source === "groq" && data.session.summary && (
+          <details className="review-detail">
+            <summary>Penjelasan tambahan oleh Groq saat sesi selesai</summary>
+            <p className="summary-text">{data.session.summary}</p>
+          </details>
+        )}
         {data.topic.material_url && (
           <MaterialLink href={data.topic.material_url}>
             {data.topic.material_title || "Buka materi guru"}
           </MaterialLink>
         )}
       </Card>
-      {next && (
+      {next ? (
         <Card className="mt recommendation-row">
           <div className="grow">
             <Badge tone="amber">Prioritas berikutnya dari sistem</Badge>
@@ -99,6 +104,14 @@ export default async function Result({
             <p>{next.reason}</p>
           </div>
           <StartButton topicId={next.topic_id} />
+        </Card>
+      ) : (
+        <Card className="mt notice">
+          <h2>Belum ada latihan berikutnya yang tersedia</h2>
+          <p>
+            Pelajari pembahasan dan materi pendamping. Mintalah guru menyiapkan
+            soal lanjutan untuk mapel ini.
+          </p>
         </Card>
       )}
       <Card className="mt">
@@ -127,7 +140,10 @@ export default async function Result({
         ))}
       </Card>
       <EstimateNote />
-      <Link className="text-link" href="/dashboard">
+      <Link
+        className="text-link"
+        href={subjectHref("/dashboard", data.topic.subject)}
+      >
         Kembali ke ringkasan belajar
       </Link>
     </>

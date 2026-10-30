@@ -1,6 +1,26 @@
-# Paket kelas XII — 27 Oktober 2026
+# Paket kelas XII — pembaruan 30 Oktober 2026
 
 Tiga mapel wajib dalam aplikasi adalah **Matematika, Bahasa Inggris, dan Bahasa Indonesia**. Paket awal memuat **72 soal orisinal: 24 per mapel, 12 topik, 6 soal per topik**. Setiap topik memiliki dua soal mudah, dua sedang, dan dua sulit. Label kesulitan merupakan perkiraan desain, belum hasil kalibrasi pada siswa mitra.
+
+Versi paket saat ini `kelas12-2026-10-30`. Stimulus Inggris diperpanjang menjadi 263–273 kata dengan beberapa paragraf; jadwal bus/perpustakaan pada ING-02 diperjelas. Opsi disusun ulang secara deterministik dengan enam kunci A/B/C/D per mapel; arti jawaban benar dipertahankan. Distraktor IND-16 diperbaiki agar menguji pemborosan kata dan perubahan makna, bukan sekadar susunan kata yang tidak masuk akal.
+
+Perubahan paket berlaku untuk peninjauan dan impor baru. Soal, jawaban, dan nilai yang sudah tersimpan tidak ditulis ulang. Guru perlu meninjau bank yang sudah pernah diimpor sebelum menambahkan versi baru; pemeriksaan duplikat menggunakan isi soal/opsi sehingga revisi dapat menjadi butir baru, bukan pengganti otomatis.
+
+## K-13 dan Kurikulum Merdeka
+
+Mitra menggunakan keduanya. Paket merupakan bahan pendukung, bukan seluruh instrumen kelas XII yang telah divalidasi. CP Fase F mencakup XI–XII; posisi kelas dan semester perlu disepakati sesuai ATP/silabus sekolah. Pembaruan CP Juni 2026 hanya mengubah Agama dan Budi Pekerti; tiga mapel ini masih merujuk CP 046/2025. [Penjelasan resmi](https://www.kemendikdasmen.go.id/siaran-pers/15636-capaian-pembelajaran-baru-telah-terbit-yang-berubah-hanya-mata-pelajaran-agama-dan-budi-pekerti).
+
+| Mapel      | Keterkaitan paket dengan pembelajaran                                                                                                     | Batas yang harus dilengkapi guru                                                                                                                                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Matematika | Pencacahan dan peluang mendampingi K-13 XII; transformasi fungsi dan busur/juring mendampingi CP Fase F atau materi prasyarat sesuai ATP. | Statistika tabel distribusi frekuensi/histogram dan keseluruhan indikator kelas XII belum tercakup. [Modul K-13 XII KD 3.2](https://repositori.kemendikdasmen.go.id/21944/1/XII_Matematika-Umum_KD-3.2_Final.pdf).                           |
+| Inggris    | Pemahaman tekstual, inferensi, evaluasi, serta prosedur. Stimulus lebih panjang memberi kesempatan membaca beberapa paragraf.             | Tidak menggantikan penilaian surat lamaran pekerjaan atau keterampilan produktif. Panjang teks saja tidak membuktikan level CEFR. [Modul K-13 XII](https://repositori.kemendikdasmen.go.id/22081/1/XII_Bahasa-Inggris_KD-3.2_4.2_Final.pdf). |
+| Indonesia  | Informasi, argumen, kebahasaan dan apresiasi teks sastra.                                                                                 | Indikator genre khusus serta menulis/presentasi perlu asesmen lain. Latihan argumen tidak otomatis menilai seluruh struktur editorial. [Modul editorial XII](https://repositori.kemendikdasmen.go.id/21961/).                                |
+
+Halaman paket guru menampilkan cakupan ini sebelum impor. Pengesahan indikator per butir dan kecukupan bank tetap dilakukan guru mitra. Tidak ada klaim bahwa satu paket berlaku sebagai ujian lengkap untuk dua kurikulum.
+
+## Materi pendamping per topik
+
+Setiap dari 12 topik paket kini memiliki halaman `/materi/<slug>` dengan penjelasan, contoh bertahap, dan latihan mandiri yang berbeda dari soal asesmen. Tautan kisi-kisi umum lama atau URL kosong mendapatkan fallback tampilan ke materi lokal. Tautan khusus yang disimpan guru tetap dipakai. Penyesuaian tampilan tersebut tidak memerlukan migration atau penulisan ulang data production.
 
 ## Acuan yang diperiksa
 

@@ -107,6 +107,11 @@ describe("Rekomendasi dan seleksi soal", () => {
     ).toThrow());
   it("kosong jika tidak tersedia soal", () =>
     expect(nextQuestion([], [], 0.3)).toBeUndefined());
+  it("tidak memaksa soal sulit saat estimasi dasar rendah dan bank dasar habis", () => {
+    const hard = seed.questions.filter((q) => q.difficulty === "hard");
+    expect(nextQuestion(hard, [], 0.3)).toBeUndefined();
+    expect(nextQuestion(hard, [], 0.5)?.difficulty).toBe("hard");
+  });
   it("tidak mengulang soal dan memilih fallback terdekat", () => {
     const q = seed.questions.filter(
       (q) => q.topic_id === seed.topics[0].id && q.difficulty !== "medium",

@@ -1,7 +1,33 @@
 import type { Subject } from "../subjects";
 import type { Topic } from "../types";
 
-export const CURRICULUM_VERSION = "kelas12-2026-10-27";
+export const CURRICULUM_VERSION = "kelas12-2026-10-30";
+export const CURRICULUM_COVERAGE: Record<
+  Subject,
+  { focus: string; k13: string; needs: string }
+> = {
+  matematika: {
+    focus:
+      "Transformasi fungsi, busur dan juring, pencacahan, serta peluang dan penalaran data.",
+    k13: "Pencacahan dan peluang dapat mendampingi pembelajaran K-13 kelas XII. Transformasi fungsi dan busur/juring perlu ditempatkan sesuai materi prasyarat serta silabus sekolah.",
+    needs:
+      "Paket belum mencakup seluruh materi kelas XII; antara lain ukuran pemusatan dan penyebaran pada tabel distribusi frekuensi serta histogram belum diukur secara memadai.",
+  },
+  "bahasa-inggris": {
+    focus:
+      "Membaca teks informasi, narasi, argumen, dan prosedur dengan stimulus latihan sekitar 250–300 kata.",
+    k13: "Paket mendukung keterampilan membaca, termasuk petunjuk/prosedur. Pemetaan ke KD kelas XII perlu mengikuti silabus mitra; latihan membaca umum tidak menggantikan asesmen surat lamaran pekerjaan.",
+    needs:
+      "Menyimak, berbicara, menulis produktif, dan seluruh genre/kompetensi K-13 maupun Merdeka belum diukur. Panjang teks bukan sertifikasi tingkat CEFR.",
+  },
+  "bahasa-indonesia": {
+    focus:
+      "Informasi teks, inferensi, evaluasi argumen dan kebahasaan, serta apresiasi sastra.",
+    k13: "Penalaran argumen dapat mendampingi pembacaan editorial. Guru tetap perlu memetakan genre dan indikator kelas XII; paket ini belum menggantikan asesmen surat lamaran atau novel secara utuh.",
+    needs:
+      "Paket hanya memakai pilihan ganda satu jawaban; kegiatan menulis, presentasi, dan penilaian genre secara menyeluruh perlu dilengkapi guru.",
+  },
+};
 export const CURRICULUM_SOURCES = [
   {
     id: "cp-2025",
@@ -161,8 +187,8 @@ export function curriculumTopics(): Topic[] {
     subject: t.subject,
     curriculum_track: "wajib",
     sort_order: 100 + i,
-    material_title: "Rujukan kompetensi dan kisi-kisi",
-    material_url: CURRICULUM_SOURCES[2].url,
+    material_title: `Pelajari ${t.name}`,
+    material_url: `/materi/${t.slug}`,
     created_at: "2026-10-27T00:00:00.000Z",
   }));
 }

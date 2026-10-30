@@ -1,4 +1,16 @@
 import "server-only";
+import { createHash } from "node:crypto";
+import { READING_STIMULI } from "./reading-stimuli";
+const {
+  info1,
+  info2,
+  narrative1,
+  narrative2,
+  argument1,
+  argument2,
+  procedure1,
+  procedure2,
+} = READING_STIMULI;
 import type { Difficulty, Option } from "../types";
 import { CURRICULUM_TOPICS, CURRICULUM_VERSION } from "../curriculum/catalog";
 
@@ -13,6 +25,22 @@ export interface CurriculumQuestion {
   competency: string;
 }
 const keys: Option[] = ["A", "B", "C", "D"];
+const answerPositions = new Map<string, Option>(
+  ["MTK", "ING", "IND"].flatMap((prefix) =>
+    Array.from(
+      { length: 24 },
+      (_, i) => `${prefix}-${String(i + 1).padStart(2, "0")}`,
+    )
+      .sort((a, b) => {
+        const digest = (code: string) =>
+          createHash("sha256")
+            .update(`${CURRICULUM_VERSION}:${code}`)
+            .digest("hex");
+        return digest(a).localeCompare(digest(b));
+      })
+      .map((code, i): [string, Option] => [code, keys[Math.floor(i / 6)]]),
+  ),
+);
 function item(
   code: string,
   topic_slug: string,
@@ -23,30 +51,33 @@ function item(
   explanation: string,
   competency: string,
 ): CurriculumQuestion {
+  const order = [0, 1, 2, 3];
+  const digest = createHash("sha256")
+    .update(`${CURRICULUM_VERSION}:${code}`)
+    .digest();
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = digest[i] % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const answerIndex = keys.indexOf(correct);
+  const target = keys.indexOf(answerPositions.get(code) ?? correct);
+  const current = order.indexOf(answerIndex);
+  [order[current], order[target]] = [order[target], order[current]];
   return {
     code,
     topic_slug,
     difficulty,
     question_text,
-    options: Object.fromEntries(keys.map((k, i) => [k, choices[i]])) as Record<
-      Option,
-      string
-    >,
-    correct_option: correct,
+    options: Object.fromEntries(
+      keys.map((k, i) => [k, choices[order[i]]]),
+    ) as Record<Option, string>,
+    correct_option: keys[order.indexOf(keys.indexOf(correct))],
     explanation,
     competency,
   };
 }
 // Seluruh stimulus dan soal berikut ditulis untuk proyek ini, bukan salinan soal resmi.
 // Rujukan menyatakan keselarasan kompetensi; tingkat kesulitan belum dikalibrasi empiris.
-const info1 = `At SMA Harapan, the library used to close when lessons ended at three. Students who travelled by bus often had only fifteen minutes to choose books. In August, the librarian tried a different schedule: the library stayed open until four on Tuesdays and Thursdays. Student volunteers helped return books, but only the librarian could approve new loans. During the four-week trial, afternoon visits rose from an average of twelve to twenty a day. The school has not decided whether to keep the schedule. Before making a decision, it will ask students about transport and check whether volunteers can continue helping during examination weeks.`;
-const info2 = `A student team placed labelled refill stations in two school corridors. Their aim was to reduce disposable cups, not to sell drinks. For the first week, the team counted cups in the bins near those corridors. In the second week, they counted again after putting up signs asking students to bring bottles. Cup waste fell, but the team also noticed that one canteen stall had been closed for repairs. In their report, they described both changes. They suggested collecting data for a longer period when all stalls were open. The principal praised the team for explaining the limits of its findings instead of claiming that the signs alone had solved the problem.`;
-const narrative1 = `Nadia had practised her speech for days, but the projector stopped working just before her turn. She stared at the blank screen. Her friend offered to explain the slides for her. Nadia almost agreed, then remembered the small model she had built from used cardboard. She put it on the desk and invited the audience to move closer. At first her voice shook. As students asked how the model collected rainwater, she answered more confidently. Her presentation lasted longer than planned, yet the teacher asked her to demonstrate it again for another class. On the way home, Nadia kept the broken remote in her bag, smiling at how little she had needed it.`;
-const narrative2 = `Arif wanted the school magazine to publish his photograph of a street seller. The picture was sharp, and he was proud of the evening light. When the editor asked whether the seller had agreed to publication, Arif said that a public street belonged to everyone. The editor did not argue. She asked him to read the caption aloud: "An unhappy worker at the end of a hard day." Arif paused. He had never spoken to the man. The next afternoon, he returned to the market. The seller laughed when he saw the picture and explained that he had been watching his daughter perform across the road. Arif rewrote the caption and asked permission before submitting the photograph again.`;
-const argument1 = `Some students want every homework task to be completed online. Digital submission can make it easier to organise files and read feedback. However, access at home is uneven: several students share one phone with their families. A fully online system could therefore make a convenient process unfair. The student council proposes a mixed approach. Teachers could accept the same task on paper or through the school platform, while providing time in the computer room for students who need it. This does not mean using two different marking standards. The learning goals and deadlines should remain the same. After a month, the school could review submission rates and ask whether either group faced avoidable difficulties.`;
-const argument2 = `A school plans to start a vegetable garden. Supporters say it could help students learn about food and cooperation. Others worry that teachers will have extra work and that plants will be neglected during holidays. These concerns deserve a practical answer. Instead of planting the whole field at once, the school could begin with two small beds maintained by a rotating team. A holiday watering plan should be agreed before seeds are bought. The trial would not prove that every class needs a garden. It would show whether this school can maintain a small one and whether students use it for meaningful learning. A decision to expand should depend on those results.`;
-const procedure1 = `To borrow a recorder for a school interview, first check the equipment calendar on the library noticeboard. If a recorder is available, submit a request at least two school days before the interview. Include the date, the teacher supervising the activity, and the expected return time. Approval is confirmed by a signed note; writing your name on the calendar is not enough. Collect the recorder during the lunch break and test it before leaving the library. If it does not work, tell the librarian immediately. Return the device by the agreed time, even if the interview is cancelled. Do not repair equipment yourself. Late returns may delay another student's approved activity.`;
-const procedure2 = `The school science fair will take place on Friday. Teams must register by Monday at noon and send a short project description. The organising committee will reply by Wednesday. A reply confirms registration; it does not guarantee permission to use electricity. Teams needing a power socket must request it separately and explain their equipment. On Friday, setup begins at seven and must finish before visitors arrive at eight. Experiments involving open flames are not allowed in the hall. Teams should prepare a poster or recorded demonstration instead. If a team cannot attend, it should inform the committee before Thursday afternoon so that the space can be offered to a waiting team.`;
 const indo1 = `Perpustakaan SMA Tunas menguji peminjaman paket buku selama enam minggu. Setiap paket memuat satu bacaan fiksi dan satu bacaan informasi. Peminjam boleh memilih judul sendiri; pustakawan hanya membantu jika diminta. Sebelum uji coba, rata-rata peminjaman mingguan berjumlah 40 buku. Selama uji coba, rata-rata itu menjadi 58 buku. Namun, masa uji coba bertepatan dengan tugas resensi dari guru Bahasa Indonesia. Dalam laporan, pustakawan mencatat kenaikan tersebut sekaligus menyebutkan tugas resensi sebagai faktor yang mungkin berpengaruh. Sekolah akan mengulangi pencatatan setelah tugas berakhir sebelum memutuskan kelanjutan program.`;
 const indo2 = `Tim majalah sekolah membuat rubrik "Jejak Alumni". Mereka mewawancarai alumni dengan jalur berbeda: bekerja, berwirausaha, dan melanjutkan studi. Setiap narasumber menerima daftar pertanyaan yang sama tentang alasan memilih jalur, hambatan, serta keterampilan yang digunakan. Rekaman wawancara ditranskripsikan, lalu dikirim kembali kepada narasumber untuk memeriksa ketepatan nama dan kutipan. Redaksi tetap bertanggung jawab menentukan struktur tulisan. Tujuan rubrik ini bukan menetapkan satu jalur sebagai yang terbaik, melainkan menyediakan gambaran yang beragam agar siswa kelas XII dapat merencanakan langkah berikutnya dengan lebih sadar.`;
 const infer1 = `Usulan memperpanjang jam kantin dinilai dapat mengurangi antrean saat istirahat. Akan tetapi, pengamatan OSIS menunjukkan bahwa antrean terpanjang hanya terjadi pada sepuluh menit pertama. Sebagian pembeli juga memesan makanan yang perlu dimasak saat itu. OSIS mengusulkan uji coba pemesanan sebelum jam istirahat untuk beberapa menu, disertai jalur pengambilan terpisah. Mereka belum mengusulkan penambahan jam kerja penjual. Jika waktu tunggu tetap tinggi setelah uji coba, pilihan lain akan dibahas bersama pengelola kantin.`;
@@ -945,12 +976,15 @@ export const CURRICULUM_QUESTIONS: CurriculumQuestion[] = [
     "IND-16",
     "indo-evaluasi-klaim",
     "easy",
-    read(evaluasi2, "Perbaikan paling tepat untuk kalimat (1) adalah …"),
+    read(
+      evaluasi2,
+      "Perbaikan kalimat (1) yang menghindari pemborosan kata dan mempertahankan makna adalah …",
+    ),
     [
-      "Para-para peserta mengumpulkan sampah sesuai jenisnya.",
-      "Peserta para-peserta mengumpulkan sampah sesuai jenisnya.",
+      "Para peserta-peserta mengumpulkan sampah sesuai jenisnya.",
+      "Setiap peserta mengumpulkan semua sampah dalam satu wadah.",
       "Para peserta mengumpulkan sampah sesuai jenisnya.",
-      "Peserta-peserta para mengumpulkan sampah sesuai jenisnya.",
+      "Peserta mengumpulkan sampah tanpa membedakan jenisnya.",
     ],
     "C",
     "Kata para sudah menyatakan jamak sehingga pengulangan peserta-peserta tidak diperlukan.",

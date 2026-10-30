@@ -210,7 +210,7 @@ describe("Migration dan RLS pada PostgreSQL lokal PGlite", () => {
     );
     expect(result.rows[0].ok).toBe(true);
     const imported = (await stateFor(DEMO_TEACHER)).state.questions.filter(
-      (q) => q.explanation.includes("kelas12-2026-10-27"),
+      (q) => q.explanation.includes("kelas12-2026-10-30"),
     );
     expect(imported).toHaveLength(24);
     expect(imported.every((q) => q.created_by === DEMO_TEACHER)).toBe(true);

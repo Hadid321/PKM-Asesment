@@ -74,7 +74,10 @@ export function nextQuestion(
   const target = levels.indexOf(difficultyFor(p));
   // Tingkat terdekat; jika berjarak sama, dahulukan yang lebih mudah. ID menstabilkan urutan.
   return questions
-    .filter((q) => !answeredIds.includes(q.id))
+    .filter(
+      (q) =>
+        !answeredIds.includes(q.id) && appropriateDifficulty(q.difficulty, p),
+    )
     .sort(
       (a, b) =>
         Math.abs(levels.indexOf(a.difficulty) - target) -
@@ -82,6 +85,13 @@ export function nextQuestion(
         levels.indexOf(a.difficulty) - levels.indexOf(b.difficulty) ||
         a.id.localeCompare(b.id),
     )[0];
+}
+export function appropriateDifficulty(
+  difficulty: Question["difficulty"],
+  p: number,
+) {
+  // Jangan melompat dua tingkat ketika siswa masih membutuhkan latihan dasar.
+  return difficultyFor(p) !== "easy" || difficulty !== "hard";
 }
 export function publicQuestion(q: Question): PublicQuestion {
   return {

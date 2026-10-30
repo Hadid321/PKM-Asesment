@@ -1,4 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["bom1"]
+  "regions": ["bom1"],
+  "git": {
+    "deploymentEnabled": {
+      "codex/fix-assessment-readiness-20261030": false
+    }
+  }
 }
