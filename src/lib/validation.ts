@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SUBJECTS } from "./subjects";
+import { CURRICULUM_TOPICS } from "./curriculum/catalog";
 z.config(z.locales.id());
 const text = (max: number) => z.string().trim().min(1, "Wajib diisi").max(max);
 export const id = z.uuid();
@@ -41,6 +42,7 @@ export const topicInput = z
             "turunan-fungsi",
             "integral-dasar",
             "peluang-kejadian",
+            ...CURRICULUM_TOPICS.map((t) => t.slug),
           ].some((slug) => v === `/materi/${slug}`)
         )
           return true;

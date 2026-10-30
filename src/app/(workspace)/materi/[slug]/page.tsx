@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Card, PageTitle, Badge } from "@/components/ui";
+import { LEARNING_MATERIALS } from "@/lib/learning-materials";
+import { subjectHref } from "@/lib/subjects";
 const content: Record<
   string,
   { title: string; paragraphs: string[]; example: string }
@@ -46,27 +48,51 @@ export default async function Material({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const article = content[(await params).slug];
+  const { slug } = await params;
+  const lesson = Object.hasOwn(LEARNING_MATERIALS, slug)
+    ? LEARNING_MATERIALS[slug]
+    : undefined;
+  const article =
+    lesson ?? (Object.hasOwn(content, slug) ? content[slug] : undefined);
   if (!article) notFound();
   return (
     <>
       <PageTitle
         eyebrow="CATATAN BELAJAR"
         title={article.title}
-        description="Materi lokal contoh untuk pengembangan. Bukan materi resmi sekolah atau klaim verifikasi kurikulum."
+        description={
+          lesson
+            ? "Baca langkahnya, coba contoh, lalu periksa alasan jawabanmu bersama guru."
+            : "Materi lokal contoh untuk pengembangan. Bukan materi resmi sekolah atau klaim verifikasi kurikulum."
+        }
       />
       <Card className="prose narrow-card">
-        <Badge>Contoh materi prototipe</Badge>
+        <Badge>
+          {lesson ? "Bahan pendamping belajar" : "Contoh materi prototipe"}
+        </Badge>
         {article.paragraphs.map((p) => (
           <p key={p}>{p}</p>
         ))}
         <h2>Contoh</h2>
         <div className="notice">{article.example}</div>
+        {lesson && (
+          <>
+            <h2>Latihan mandiri</h2>
+            <p>{lesson.exercise.prompt}</p>
+            <details className="review-detail">
+              <summary>Lihat pembahasan latihan mandiri</summary>
+              <p>{lesson.exercise.explanation}</p>
+            </details>
+          </>
+        )}
         <p>
           Coba kerjakan satu soal serupa, periksa langkahmu, lalu baca
           pembahasan untuk memahami kesalahan.
         </p>
-        <Link className="btn primary" href="/latihan">
+        <Link
+          className="btn primary"
+          href={subjectHref("/latihan", lesson?.subject ?? "matematika")}
+        >
           Kembali ke latihan
         </Link>
       </Card>

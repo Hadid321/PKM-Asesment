@@ -14,6 +14,10 @@ import {
 import { StartButton } from "@/components/actions";
 export function PracticeView({ data }: { data: DashboardData }) {
   const active = data.activeSession;
+  const topics = new Map(data.topics.map((t) => [t.id, t]));
+  const ordered = [...data.recommendations, ...data.waitingRecommendations].map(
+    (r) => topics.get(r.topic_id)!,
+  );
   return (
     <>
       <PageTitle
@@ -21,6 +25,21 @@ export function PracticeView({ data }: { data: DashboardData }) {
         title="Pilih latihan"
         description="Soal berasal dari bank guru kelasmu. Tingkat kesulitan mengikuti hasil jawaban."
       />
+      {data.recommendations.length === 0 && (
+        <Card className="notice">
+          <h2>Latihan sedang disiapkan guru</h2>
+          <p>
+            {data.classes.length
+              ? "Belum ada soal yang tersedia untuk mapel ini. Hubungi guru kelasmu."
+              : "Bergabunglah ke kelas agar soal dari gurumu tersedia."}
+          </p>
+          {!data.classes.length && (
+            <Link href="/kelas" className="text-link">
+              Bergabung ke kelas
+            </Link>
+          )}
+        </Card>
+      )}
       {active && (
         <Card className="notice">
           <strong>Ada latihan yang belum selesai.</strong>
@@ -31,11 +50,12 @@ export function PracticeView({ data }: { data: DashboardData }) {
         </Card>
       )}
       <div className="topic-grid">
-        {data.topics.map((t, i) => {
+        {ordered.map((t, i) => {
           const mastery =
             data.mastery.find((m) => m.topic_id === t.id)?.p_l ?? BKT.initial;
           const count =
             data.questionCounts.find((q) => q.topic_id === t.id)?.count ?? 0;
+          const ready = data.recommendations.some((r) => r.topic_id === t.id);
           return (
             <Card key={t.id} className="topic-card">
               <div className="section-head">
@@ -57,10 +77,14 @@ export function PracticeView({ data }: { data: DashboardData }) {
                 <BookOpen size={14} />
                 {count} soal tersedia · Maksimal 10 per sesi
               </p>
-              {count ? (
+              {ready ? (
                 <StartButton secondary topicId={t.id} />
               ) : (
-                <Badge>Soal belum tersedia</Badge>
+                <Badge>
+                  {count
+                    ? "Menunggu soal pada tingkat yang sesuai"
+                    : "Soal belum tersedia"}
+                </Badge>
               )}
             </Card>
           );

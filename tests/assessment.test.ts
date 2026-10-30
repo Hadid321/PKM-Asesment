@@ -14,7 +14,12 @@ const student = seed.profiles.find((p) => p.id === DEMO_STUDENT)!;
 const teacher = seed.profiles.find((p) => p.id === DEMO_TEACHER)!;
 describe("Alur asesmen dan otorisasi", () => {
   it("menyelesaikan 10 soal, menyimpan prior lintas sesi, dan mencegah duplikasi paralel", async () => {
-    const { repo, state } = memoryRepository();
+    const initial = demoState();
+    // Skenario batas sesi menyediakan cukup soal dasar, terpisah dari tes bank terbatas.
+    initial.questions = initial.questions.map((q) =>
+      q.topic_id === seed.topics[1].id ? { ...q, difficulty: "easy" } : q,
+    );
+    const { repo, state } = memoryRepository(initial);
     const start = await execute(repo, student, {
       action: "start",
       topic_id: seed.topics[1].id,

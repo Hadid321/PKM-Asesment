@@ -1,6 +1,6 @@
 import type { DashboardData } from "./server/assessment";
 import type { Subject } from "./subjects";
-import { recommend } from "./domain/adaptive";
+import { learningPlan } from "./domain/learning-plan";
 
 // Hanya DTO milik aktor yang sudah disaring server. Bank soal tidak dikirim ke sini.
 export function dashboardForSubject(
@@ -24,10 +24,11 @@ export function dashboardForSubject(
     attempts: data.attempts.filter((row) => ids.has(row.topic_id)),
     sessions: data.sessions.filter((row) => ids.has(row.topic_id)),
     questionCounts: data.questionCounts.filter((row) => ids.has(row.topic_id)),
-    recommendations: recommend(
+    ...learningPlan(
       topics,
       prerequisites,
       mastery.filter((row) => row.student_id === data.actor.id),
+      data.questionCounts,
     ),
   };
 }

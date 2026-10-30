@@ -9,14 +9,21 @@ import {
 } from "../domain/bkt";
 import {
   assertAcyclic,
+  appropriateDifficulty,
   nextQuestion,
   publicQuestion,
-  recommend,
 } from "../domain/adaptive";
+import {
+  countQuestions,
+  learningPlan,
+  sessionOverview,
+} from "../domain/learning-plan";
+import { sessionLearningPlan } from "./learning-plan";
+import { topicWithLearningMaterial } from "../learning-materials";
 import { fingerprint, validateCsv } from "../domain/csv";
 import { ensure } from "../domain/errors";
 import { operationInput } from "../validation";
-import type { Profile, QuizSession, State } from "../types";
+import type { Profile, Question, QuizSession, State } from "../types";
 import { scopeState, type Repository } from "./repository";
 import type { Subject } from "../subjects";
 import { curriculumPackage } from "./curriculum-content";
@@ -45,6 +52,18 @@ function closeUnavailableSession(session: QuizSession) {
   session.summary_source = "template";
   session.summary_claimed = true;
 }
+function sessionDifficultyAllowed(
+  state: State,
+  actor: Profile,
+  session: QuizSession,
+  difficulty: Question["difficulty"],
+) {
+  const p =
+    state.mastery.find(
+      (m) => m.student_id === actor.id && m.topic_id === session.topic_id,
+    )?.p_l ?? BKT.initial;
+  return appropriateDifficulty(difficulty, p);
+}
 function advance(state: State, actor: Profile, session: QuizSession) {
   if (session.status === "completed") return;
   const attempts = state.attempts.filter((a) => a.session_id === session.id);
@@ -55,11 +74,8 @@ function advance(state: State, actor: Profile, session: QuizSession) {
   const questions = scopeState(state, actor).questions.filter(
     (q) => q.topic_id === session.topic_id,
   );
-  const next = nextQuestion(
-    questions,
-    attempts.map((a) => a.question_id),
-    p,
-  );
+  const answeredIds = attempts.map((a) => a.question_id);
+  const next = nextQuestion(questions, answeredIds, p);
   if (
     attempts.length >= MAX_QUESTIONS ||
     (attempts.length > 0 && p >= MASTERY_THRESHOLD) ||
@@ -73,14 +89,12 @@ function advance(state: State, actor: Profile, session: QuizSession) {
         ? "Batas 10 soal tercapai"
         : p >= MASTERY_THRESHOLD
           ? "Ambang estimasi model tercapai"
-          : "Soal yang tersedia telah selesai";
+          : questions.some((q) => !answeredIds.includes(q.id))
+            ? "Guru perlu melengkapi soal pada tingkat yang sesuai"
+            : "Soal yang tersedia telah selesai";
     const topic = state.topics.find((t) => t.id === session.topic_id)!;
-    const recommendations = recommend(
-      state.topics,
-      state.topic_prerequisites,
-      state.mastery.filter((m) => m.student_id === actor.id),
-    );
-    session.summary = `${topic.name}: ${attempts.filter((a) => a.is_correct).length} dari ${attempts.length} jawaban benar. Estimasi penguasaan BKT ${Math.round(p * 100)}%. Prioritas berikutnya: ${recommendations[0]?.name ?? topic.name}. Pelajari pembahasan kesalahan, baca materi guru, lalu coba latihan lanjutan. Estimasi model bukan sertifikasi kompetensi.`;
+    const { recommendations } = sessionLearningPlan(state, actor, topic);
+    session.summary = sessionOverview(topic, attempts, recommendations);
     session.summary_source = "template";
   } else session.current_question_id = next.id;
 }
@@ -103,16 +117,26 @@ export async function execute(repo: Repository, actor: Profile, raw: unknown) {
         const existing = state.quiz_sessions.find(
           (s) => s.student_id === actor.id && s.status === "active",
         );
-        if (
-          existing &&
-          scopeState(state, actor).questions.some(
-            (q) => q.id === existing.current_question_id,
+        const currentQuestion = existing
+          ? scopeState(state, actor).questions.find(
+              (q) => q.id === existing.current_question_id,
+            )
+          : undefined;
+        if (existing && currentQuestion) {
+          if (
+            !sessionDifficultyAllowed(
+              state,
+              actor,
+              existing,
+              currentQuestion.difficulty,
+            )
           )
-        )
+            advance(state, actor, existing);
           return {
             session_id: existing.id,
             message: "Latihan sebelumnya dilanjutkan.",
           };
+        }
         if (existing) closeUnavailableSession(existing);
         ensure(
           state.quiz_sessions.filter(
@@ -128,6 +152,21 @@ export async function execute(repo: Repository, actor: Profile, raw: unknown) {
             (q) => q.topic_id === input.topic_id,
           ),
           "Belum ada soal untuk topik ini. Hubungi guru.",
+          409,
+        );
+        const estimate =
+          state.mastery.find(
+            (m) => m.student_id === actor.id && m.topic_id === input.topic_id,
+          )?.p_l ?? BKT.initial;
+        ensure(
+          nextQuestion(
+            scopeState(state, actor).questions.filter(
+              (q) => q.topic_id === input.topic_id,
+            ),
+            [],
+            estimate,
+          ),
+          "Guru perlu melengkapi soal pada tingkat yang sesuai sebelum latihan dimulai.",
           409,
         );
         const session: QuizSession = {
@@ -171,6 +210,11 @@ export async function execute(repo: Repository, actor: Profile, raw: unknown) {
           (q) => q.id === input.question_id && q.topic_id === session.topic_id,
         );
         ensure(q, "Soal tidak tersedia.", 404);
+        ensure(
+          sessionDifficultyAllowed(state, actor, session, q.difficulty),
+          "Tingkat soal telah disesuaikan. Muat ulang latihan untuk melanjutkan.",
+          409,
+        );
         const current = state.mastery.find(
           (m) => m.student_id === actor.id && m.topic_id === q.topic_id,
         );
@@ -450,24 +494,44 @@ export async function quizView(
   const state = scopeState(await repo.read(actor), actor);
   const session = ownSession(state, actor, z.uuid().parse(sessionId));
   const q = state.questions.find((q) => q.id === session.current_question_id);
-  if (session.status === "active" && !q) {
+  if (
+    session.status === "active" &&
+    (!q || !sessionDifficultyAllowed(state, actor, session, q.difficulty))
+  ) {
     await repo.transact(actor, (draft) => {
       const current = ownSession(draft, actor, sessionId);
-      if (
-        current.status === "active" &&
-        !scopeState(draft, actor).questions.some(
-          (question) => question.id === current.current_question_id,
+      if (current.status !== "active") return;
+      const currentQuestion = scopeState(draft, actor).questions.find(
+        (question) => question.id === current.current_question_id,
+      );
+      if (!currentQuestion) closeUnavailableSession(current);
+      else if (
+        !sessionDifficultyAllowed(
+          draft,
+          actor,
+          current,
+          currentQuestion.difficulty,
         )
       )
-        closeUnavailableSession(current);
+        advance(draft, actor, current);
     });
     return quizView(repo, actor, sessionId);
   }
+  const topic = state.topics.find((t) => t.id === session.topic_id)!;
+  const attempts = state.attempts.filter((a) => a.session_id === session.id);
+  const plan = sessionLearningPlan(state, actor, topic);
   return {
     session,
     question: q ? publicQuestion(q) : null,
-    topic: state.topics.find((t) => t.id === session.topic_id)!,
-    attempts: state.attempts.filter((a) => a.session_id === session.id),
+    topic: topicWithLearningMaterial(topic),
+    attempts,
+    ...plan,
+    summary:
+      session.status === "completed"
+        ? session.end_reason === "Bank soal sesi sebelumnya tidak lagi tersedia"
+          ? session.summary
+          : sessionOverview(topic, attempts, plan.recommendations)
+        : null,
     max: MAX_QUESTIONS,
   };
 }
@@ -501,17 +565,23 @@ export async function dashboard(
     actor.role === "student"
       ? [actor]
       : state.profiles.filter((p) => p.role === "student");
-  const recommendations = recommend(
+  const questionCounts = countQuestions(
+    state.topics,
+    state.questions,
+    state.mastery.filter((m) => m.student_id === actor.id),
+  );
+  const plan = learningPlan(
     state.topics,
     state.topic_prerequisites,
     state.mastery.filter((m) => m.student_id === actor.id),
+    questionCounts,
   );
   return {
     subject: subject ?? null,
     activeSession,
     activeTopic,
     actor,
-    topics: state.topics,
+    topics: state.topics.map(topicWithLearningMaterial),
     prerequisites: state.topic_prerequisites,
     classes: state.classes,
     members: state.class_members,
@@ -519,11 +589,8 @@ export async function dashboard(
     mastery: state.mastery,
     attempts: state.attempts,
     sessions: state.quiz_sessions,
-    recommendations,
-    questionCounts: state.topics.map((t) => ({
-      topic_id: t.id,
-      count: state.questions.filter((q) => q.topic_id === t.id).length,
-    })),
+    ...plan,
+    questionCounts,
   };
 }
 export type DashboardData = Awaited<ReturnType<typeof dashboard>>;

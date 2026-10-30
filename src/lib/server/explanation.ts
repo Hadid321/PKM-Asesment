@@ -1,7 +1,7 @@
 import "server-only";
 import Groq from "groq-sdk";
 import { z } from "zod";
-import { recommend } from "../domain/adaptive";
+import { sessionLearningPlan } from "./learning-plan";
 import { BKT } from "../domain/bkt";
 import { ensure } from "../domain/errors";
 import type { Profile } from "../types";
@@ -89,6 +89,7 @@ export async function summarize(
     if (session.status !== "completed" || session.summary_claimed) return null;
     // Klaim disimpan SEBELUM API dipanggil; retry jaringan/refresh tidak memanggil ulang provider.
     session.summary_claimed = true;
+    const topic = state.topics.find((t) => t.id === session.topic_id)!;
     return {
       topic: state.topics.find((t) => t.id === session.topic_id)!.name,
       mastery:
@@ -101,11 +102,9 @@ export async function summarize(
           question: a.question_text,
           explanation: a.explanation,
         })),
-      priorities: recommend(
-        state.topics,
-        state.topic_prerequisites,
-        state.mastery.filter((m) => m.student_id === actor.id),
-      ).map((r) => ({ name: r.name, reason: r.reason })),
+      priorities: sessionLearningPlan(state, actor, topic).recommendations.map(
+        (r) => ({ name: r.name, reason: r.reason }),
+      ),
       fallback: session.summary!,
     };
   });

@@ -3,7 +3,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { curriculumPackage } from "@/lib/server/curriculum-content";
 import type { Subject } from "@/lib/subjects";
-import { CURRICULUM_SOURCES } from "@/lib/curriculum/catalog";
+import {
+  CURRICULUM_COVERAGE,
+  CURRICULUM_SOURCES,
+} from "@/lib/curriculum/catalog";
 import { selectedSubject, SUBJECT_NAMES } from "@/lib/subjects";
 import { SubjectNav } from "@/components/subject-nav";
 import { CurriculumImport } from "@/components/curriculum-import";
@@ -30,11 +33,21 @@ export function CurriculumView({ packs }: { packs: Record<Subject, Package> }) {
             {SUBJECT_NAMES[subject]} · {pack.questions.length} soal
           </h2>
           <p>
-            Acuan CP Fase F dan kisi-kisi TKA, diperiksa 27 Oktober 2026. Ini
+            Acuan CP Fase F dan kisi-kisi TKA, ditelaah 30 Oktober 2026. Ini
             latihan orisinal, bukan soal resmi atau simulasi lengkap TKA.
             Cakupan Fase F meliputi XI–XII; sesuaikan dengan ATP sekolah.
             Kesulitan mudah/sedang/sulit masih perkiraan awal.
           </p>
+          <details className="review-detail">
+            <summary>Cakupan K-13 dan Kurikulum Merdeka</summary>
+            <p>{CURRICULUM_COVERAGE[subject].focus}</p>
+            <p>{CURRICULUM_COVERAGE[subject].k13}</p>
+            <p>
+              Untuk Kurikulum Merdeka, Fase F mencakup XI–XII; urutan dan
+              indikator kelas XII mengikuti ATP sekolah.
+            </p>
+            <p>{CURRICULUM_COVERAGE[subject].needs}</p>
+          </details>
           <p>
             Paket menggunakan pilihan ganda satu jawaban. Keterampilan menyimak,
             berbicara, menulis produktif, dan seluruh cakupan TKA belum diukur.
