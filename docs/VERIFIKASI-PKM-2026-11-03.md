@@ -32,3 +32,9 @@ Sumber uji adalah salinan persis `main` GitHub `7fceb04a5f2c6b8311f1c26cb386bc1a
 Inspeksi baca-saja menemukan dua akun siswa terkonfirmasi, tanpa guru/kelas/keanggotaan/bank milik guru. Kedua akun tetap siswa sesuai keputusan pemilik. Tidak ada akun yang dipromosikan atau data production yang ditambahkan. Pemilik sedang menyiapkan akun guru terpisah; setelah identitas dan izinnya diberikan, kelas PKM serta bank dapat disiapkan. Soal seed tanpa pemilik tidak otomatis disajikan sebagai soal guru.
 
 Deployment ditahan sesuai instruksi persetujuan terpisah. Perubahan domain belum membuktikan login nyata sampai deployment memakai APP_URL baru dan pemilik mencoba akun sendiri. Tidak ada pengujian login memakai kata sandi asli, pengiriman email baru, atau uji beban 30 siswa yang diklaim selesai. Pengaturan email serta peninjauan akademik oleh guru mitra tetap bagian persiapan kegiatan.
+
+## Pembaruan setelah persetujuan deployment
+
+Pemilik kemudian menyetujui deployment. Commit aplikasi `4ce1397dad2e2583eb012d6d7a8d013c5950b052` dirilis melalui deployment `dpl_E1uiyXqnYHFsLg7fwLoJPZSUPfZj`, berstatus READY pada proyek pkm-aja dan domain sekolah. Auto-deploy tetap ditahan; persetujuan ini dipakai untuk rilis manual tersebut.
+
+Pemeriksaan setelah rilis: GET login 200 dengan identitas sekolah dan petunjuk memakai akun lama. POST login kosong dari Origin domain sekolah kini mencapai validasi formulir (400), sedangkan Origin domain lama/asing ditolak 403. Ini memverifikasi perbaikan mismatch domain tanpa mematikan perlindungan Origin. Alamat lama `/login` mengarah ke `https://www.adaptiva-sman1pp.my.id/login`. Browser produksi memverifikasi ukuran teks dasar 18 px dan tidak ada nama layanan database pada teks halaman. Konfirmasi login nyata masih menunggu pemilik mencoba akun sendiri.
