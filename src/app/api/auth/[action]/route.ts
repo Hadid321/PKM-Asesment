@@ -35,7 +35,7 @@ export async function POST(
     }
     ensure(
       mode() === "supabase",
-      "Gunakan tombol masuk demo. Akun sungguhan hanya tersedia dalam mode Supabase.",
+      "Gunakan tombol masuk demo pada halaman ini.",
       400,
     );
     if (action === "login") {

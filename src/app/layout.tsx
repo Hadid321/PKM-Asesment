@@ -3,11 +3,11 @@ import "./globals.css";
 import { ThemeSync } from "@/components/theme-sync";
 export const metadata: Metadata = {
   title: {
-    default: "Adaptiva — Ruang belajar SMA",
+    default: "Adaptiva — SMAN 1 Parung Panjang",
     template: "%s | Adaptiva",
   },
   description:
-    "Latihan Matematika, Bahasa Indonesia, dan Bahasa Inggris kelas XII dengan pembahasan dan pendampingan guru.",
+    "Ruang latihan dan pendampingan belajar Matematika, Bahasa Indonesia, dan Bahasa Inggris kelas XII untuk kegiatan PKM di SMAN 1 Parung Panjang.",
   robots: { index: false, follow: false },
 };
 export default function RootLayout({

@@ -13,9 +13,9 @@ describe("Batas input dan Origin", () => {
   it("menerima origin lokal walau Next memakai host internal berbeda", async () =>
     expect(await readJson(request('{"ok":true}'))).toEqual({ ok: true }));
   it("menolak asal lain", async () =>
-    expect(readJson(request("{}", "https://palsu.invalid"))).rejects.toThrow(
-      "Asal",
-    ));
+    expect(
+      readJson(request("{}", "https://palsu.invalid")),
+    ).rejects.toMatchObject({ status: 403 }));
   it("menolak JSON rusak", async () =>
     expect(readJson(request("rusak"))).rejects.toThrow("JSON tidak valid"));
   it("membatasi ukuran stream", async () =>

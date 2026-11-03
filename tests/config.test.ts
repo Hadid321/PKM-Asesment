@@ -5,6 +5,7 @@ import {
   supabaseConfig,
   supabaseServerConfig,
 } from "@/lib/server/config";
+import { AppError } from "@/lib/domain/errors";
 import { stateSchema } from "@/lib/state-schema";
 import { demoState } from "@/lib/demo/seed";
 afterEach(() => vi.unstubAllEnvs());
@@ -18,7 +19,7 @@ describe("Mode eksplisit dan konfigurasi", () => {
         "sb_publishable_local_test",
       );
       vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", key);
-      expect(() => supabaseServerConfig()).toThrow("SUPABASE_SERVICE_ROLE_KEY");
+      expect(() => supabaseServerConfig()).toThrow(AppError);
     },
   );
   it("mengenali bentuk secret modern dan legacy service_role tanpa memverifikasi kredensial", () => {
@@ -30,7 +31,7 @@ describe("Mode eksplisit dan konfigurasi", () => {
     const legacy = (role: string) =>
       `local.${Buffer.from(JSON.stringify({ role })).toString("base64url")}.test`;
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", legacy("anon"));
-    expect(() => supabaseServerConfig()).toThrow("SUPABASE_SERVICE_ROLE_KEY");
+    expect(() => supabaseServerConfig()).toThrow(AppError);
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", legacy("service_role"));
     expect(supabaseServerConfig().key).toBe(legacy("service_role"));
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "sb_secret_local_test");
@@ -40,7 +41,7 @@ describe("Mode eksplisit dan konfigurasi", () => {
     vi.stubEnv("APP_URL", "https://sekolah.example.org/");
     expect(applicationOrigin()).toBe("https://sekolah.example.org");
     vi.stubEnv("APP_URL", "javascript:alert(1)");
-    expect(() => applicationOrigin()).toThrow("APP_URL");
+    expect(() => applicationOrigin()).toThrow(AppError);
   });
   it("memeriksa data eksternal dan menolak probabilitas rusak", () => {
     const state = demoState();
@@ -53,15 +54,15 @@ describe("Mode eksplisit dan konfigurasi", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "");
     expect(mode()).toBe("supabase");
-    expect(() => supabaseConfig()).toThrow("Konfigurasi Supabase");
+    expect(() => supabaseConfig()).toThrow(AppError);
   });
   it("menolak mode yang salah", () => {
     vi.stubEnv("APP_MODE", "salah");
-    expect(() => mode()).toThrow("APP_MODE");
+    expect(() => mode()).toThrow(AppError);
   });
   it("menolak filesystem demo pada Vercel", () => {
     vi.stubEnv("APP_MODE", "demo");
     vi.stubEnv("VERCEL", "1");
-    expect(() => mode()).toThrow("Mode demo");
+    expect(() => mode()).toThrow(AppError);
   });
 });

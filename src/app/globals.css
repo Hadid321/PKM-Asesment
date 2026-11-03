@@ -4,7 +4,7 @@
   --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
 }
 :root {
-  font-size: 100%;
+  font-size: 112.5%;
   color-scheme: light;
   --bg: #f7f7f8;
   --surface: #fff;
@@ -31,7 +31,7 @@
   --error-bg: #fbf0f0;
 }
 html[data-text-size="large"] {
-  font-size: 125%;
+  font-size: 137.5%;
 }
 html[data-theme="dark"] {
   color-scheme: dark;
@@ -2846,5 +2846,11 @@ textarea {
   .demo-banner {
     padding-left: 18px;
     padding-right: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
 }

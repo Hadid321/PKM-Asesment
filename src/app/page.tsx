@@ -39,7 +39,7 @@ export default function Home() {
         <section className={styles.hero} aria-labelledby="hero-title">
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>
-              <span /> Ruang belajar siswa SMA · Kelas XII
+              <span /> SMAN 1 Parung Panjang · Kelas XII
             </p>
             <h1 id="hero-title">
               Belajar dimulai
@@ -238,8 +238,8 @@ export default function Home() {
       <footer className={styles.footer}>
         <Brand href="/" />
         <p>
-          Dikembangkan melalui program pengabdian kepada masyarakat bersama
-          mitra SMA.
+          Dikembangkan melalui program pengabdian kepada masyarakat bersama SMAN
+          1 Parung Panjang.
         </p>
         <Link href="/login">
           Ruang belajar <ArrowUpRight size={15} />

@@ -23,7 +23,11 @@ export async function readJson(request: Request) {
   const origin = request.headers.get("origin");
   // Next dapat memakai host internal berbeda pada Request.url; gunakan origin konfigurasi tetap.
   const expectedOrigin = applicationOrigin();
-  ensure(origin === expectedOrigin, "Asal permintaan tidak diizinkan.", 403);
+  ensure(
+    origin === expectedOrigin,
+    "Alamat halaman ini belum sesuai. Buka kembali Adaptiva melalui alamat sekolah atau hubungi panitia PKM.",
+    403,
+  );
   ensure(
     request.headers.get("content-type")?.includes("application/json"),
     "Gunakan JSON.",
@@ -66,7 +70,15 @@ export function apiError(error: unknown) {
       400,
     );
   if (error instanceof AppError)
-    return json({ error: error.message }, error.status);
+    return json(
+      {
+        error:
+          error.status >= 500
+            ? "Layanan belajar sedang terkendala. Coba lagi nanti atau hubungi panitia PKM."
+            : error.message,
+      },
+      error.status,
+    );
   return json(
     {
       error:

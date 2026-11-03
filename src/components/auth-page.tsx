@@ -4,6 +4,7 @@ import { AuthForm } from "./auth-form";
 import { PublicHeader } from "./public-header";
 import { mode } from "@/lib/server/config";
 import styles from "./public.module.css";
+import { SCHOOL_NAME } from "@/lib/site";
 
 export function AuthPage({
   register = false,
@@ -35,7 +36,7 @@ export function AuthPage({
       <PublicHeader auth />
       <main className={styles.authContent} id="auth-main">
         <aside className={styles.authIntro}>
-          <p className={styles.eyebrow}>Adaptiva · Untuk siswa dan guru SMA</p>
+          <p className={styles.eyebrow}>Adaptiva · {SCHOOL_NAME}</p>
           <h1>
             Ada ruang <br />
             untuk <em>belajar lagi.</em>
@@ -78,7 +79,7 @@ export function AuthPage({
               ? "Coba alur belajar dan pendampingan dengan data simulasi."
               : register
                 ? "Gunakan email aktif untuk menerima tautan konfirmasi akun."
-                : "Gunakan akun yang sudah terdaftar untuk melanjutkan."}
+                : "Sudah pernah mendaftar? Gunakan email dan kata sandi yang sama; tidak perlu membuat akun baru."}
           </p>
           {status === "expired" && (
             <p className="notice">

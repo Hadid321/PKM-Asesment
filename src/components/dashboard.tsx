@@ -349,7 +349,7 @@ export function TeacherDashboard({ data }: { data: DashboardData }) {
   return (
     <>
       <PageTitle
-        eyebrow="RUANG GURU / MITRA SMA"
+        eyebrow="RUANG GURU / SMAN 1 PARUNG PANJANG"
         title="Ringkasan kelas"
         description={`Selamat datang, ${data.actor.full_name.split(" ")[0]}. Kelola asesmen dan tindak lanjut siswa.`}
         action={
@@ -373,9 +373,14 @@ export function TeacherDashboard({ data }: { data: DashboardData }) {
           <p>
             {questions
               ? `${questions} soal Anda tersimpan dalam bank. Siswa di kelas Anda dapat menggunakannya untuk latihan adaptif.`
-              : "Tambahkan soal sendiri atau unggah CSV. Siswa hanya menerima soal dari guru kelasnya; tidak ada soal yang dibuat otomatis oleh AI."}
+              : "Buka Paket kelas XII, tinjau soal, lalu tambahkan ke bank Anda. Setelah siswa bergabung ke kelas, mereka dapat langsung berlatih."}
           </p>
           <div className="practice-actions">
+            {!questions && (
+              <Link className="btn inverse" href="/paket-soal">
+                Siapkan paket latihan
+              </Link>
+            )}
             <Link className="btn inverse" href="/impor">
               <Upload size={17} />
               Unggah soal CSV

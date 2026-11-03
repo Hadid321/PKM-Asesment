@@ -9,13 +9,14 @@ import { TABLES, type Profile, type State } from "../types";
 import { snapshotSchema, stateSchema } from "../state-schema";
 import { curriculumTopics } from "../curriculum/catalog";
 import { LEGACY_ENRICHMENT } from "../subjects";
+import { prepareDemoQuestions } from "./demo-curriculum";
 function upgradeDemoTopics(state: State) {
   for (const t of state.topics)
     if (LEGACY_ENRICHMENT.has(t.slug)) t.curriculum_track = "pengayaan";
   for (const t of curriculumTopics())
     if (!state.topics.some((existing) => existing.slug === t.slug))
       state.topics.push(t);
-  return state;
+  return prepareDemoQuestions(state);
 }
 export interface Repository {
   read(actor: Profile): Promise<State>;

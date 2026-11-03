@@ -86,7 +86,9 @@ export default async function Result({
         </p>
         {data.session.summary_source === "groq" && data.session.summary && (
           <details className="review-detail">
-            <summary>Penjelasan tambahan oleh Groq saat sesi selesai</summary>
+            <summary>
+              Penjelasan tambahan berbantuan AI saat sesi selesai
+            </summary>
             <p className="summary-text">{data.session.summary}</p>
           </details>
         )}

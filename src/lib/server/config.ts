@@ -3,10 +3,13 @@ import { AppError } from "../domain/errors";
 export function mode(): "demo" | "supabase" {
   const value = process.env.APP_MODE ?? "demo";
   if (value !== "demo" && value !== "supabase")
-    throw new AppError("APP_MODE harus demo atau supabase.", 503);
+    throw new AppError(
+      "Ruang belajar sedang disiapkan. Hubungi panitia PKM.",
+      503,
+    );
   if (value === "demo" && process.env.VERCEL)
     throw new AppError(
-      "Mode demo menggunakan berkas lokal. Pilih APP_MODE=supabase untuk hosting Vercel.",
+      "Ruang belajar sedang disiapkan. Hubungi panitia PKM.",
       503,
     );
   return value;
@@ -16,7 +19,7 @@ export function supabaseConfig() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key || !/^https:\/\//.test(url))
     throw new AppError(
-      "Konfigurasi Supabase belum lengkap. Isi URL, publishable key, dan service role key sesuai README.",
+      "Layanan akun belum siap. Coba lagi nanti atau hubungi panitia PKM.",
       503,
     );
   return { url, key };
@@ -40,7 +43,7 @@ export function supabaseServerConfig() {
     (!/^sb_secret_[A-Za-z0-9_-]+$/.test(key) && legacyRole !== "service_role")
   )
     throw new AppError(
-      "SUPABASE_SERVICE_ROLE_KEY pada server harus berisi secret key atau legacy service_role yang valid.",
+      "Data belajar belum dapat diakses. Hubungi panitia PKM.",
       503,
     );
   return { url, key };
@@ -48,6 +51,8 @@ export function supabaseServerConfig() {
 
 export function applicationOrigin() {
   try {
+    if (process.env.VERCEL && !process.env.APP_URL?.trim())
+      throw new Error("Missing application origin");
     const url = new URL(process.env.APP_URL || "http://127.0.0.1:3000");
     if (
       !["http:", "https:"].includes(url.protocol) ||
@@ -59,7 +64,7 @@ export function applicationOrigin() {
     return url.origin;
   } catch {
     throw new AppError(
-      "APP_URL pada server belum sesuai alamat aplikasi.",
+      "Alamat ruang belajar belum siap. Hubungi panitia PKM.",
       503,
     );
   }

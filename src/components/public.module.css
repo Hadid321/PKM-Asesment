@@ -777,6 +777,9 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .publicPage section:target {
+    animation: section-arrival 0.45s ease-out;
+  }
   .hero > *,
   .authIntro,
   .authPanel {
@@ -802,6 +805,14 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes section-arrival {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
   }
 }
 @media (max-width: 1050px) {

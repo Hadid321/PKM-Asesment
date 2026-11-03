@@ -9,12 +9,12 @@ export default async function Profile() {
       <PageTitle
         eyebrow="PENGATURAN"
         title="Profil Anda"
-        description="Perbarui nama tampilan. Peran akun hanya dapat diubah oleh administrator."
+        description="Perbarui nama yang ditampilkan. Hubungi panitia PKM jika peran akun perlu diperiksa."
       />
       <Card className="narrow-card">
         <Badge tone="green">
           {data.actor.role === "student" ? "Siswa" : "Guru"} ·{" "}
-          {mode() === "demo" ? "Data demo" : "Supabase"}
+          {mode() === "demo" ? "Data simulasi" : "Akun sekolah"}
         </Badge>
         <div className="mt">
           <SimpleForm

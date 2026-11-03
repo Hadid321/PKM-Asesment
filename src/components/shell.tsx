@@ -22,6 +22,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { TextSizeToggle } from "./text-size-toggle";
 import { selectedSubject, subjectHref } from "@/lib/subjects";
 import { Brand } from "./brand";
+import { SCHOOL_NAME } from "@/lib/site";
 export { Brand } from "./brand";
 function NavigationHint() {
   const { pending } = useLinkStatus();
@@ -117,7 +118,7 @@ export function Shell({
           <span className="workspace-avatar">{student ? "S" : "G"}</span>
           <div>
             <strong>Ruang {student ? "siswa" : "guru"}</strong>
-            <span>Mitra sekolah SMA</span>
+            <span>{SCHOOL_NAME}</span>
           </div>
         </div>
         <div className="workspace-label">RUANG KERJA</div>
@@ -140,7 +141,7 @@ export function Shell({
           <div className="program-note">
             <span className="program-dot" />
             <span>
-              Pengabdian masyarakat<strong>Pendampingan belajar SMA</strong>
+              Kegiatan PKM<strong>Pendampingan belajar kelas XII</strong>
             </span>
           </div>
           <Link className="settings-link" href="/panduan">
@@ -220,8 +221,8 @@ export function Shell({
           </div>
         </main>
         <footer className="app-footer">
-          <span>Adaptiva / Program pengabdian kepada masyarakat</span>
-          <span>Asesmen formatif untuk mitra SMA</span>
+          <span>Adaptiva / {SCHOOL_NAME}</span>
+          <span>Pendampingan belajar melalui kegiatan PKM</span>
         </footer>
       </div>
     </div>

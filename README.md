@@ -1,5 +1,7 @@
 # Adaptiva — Asesmen dan rekomendasi belajar adaptif
 
+**Kegiatan PKM SMAN 1 Parung Panjang:** alamat utama https://www.adaptiva-sman1pp.my.id. Lihat [panduan panitia](docs/PANDUAN-PANITIA-PKM.md) dan [verifikasi kesiapan 3 November](docs/VERIFIKASI-PKM-2026-11-03.md). Mode demo lokal kini menyiapkan 72 soal paket tiga mapel secara idempotent, di samping soal lama; data jawaban dan peran tetap. Penyimpanan sekolah tidak mengimpor apa pun saat halaman dibuka: bank sekolah tetap dikelola akun guru yang ditetapkan pengelola.
+
 Platform **program pengabdian kepada masyarakat bersama mitra SMA**, dengan judul “Penerapan Sistem Asesmen serta Rekomendasi Belajar Berbasis Web dengan Dukungan Kecerdasan Artifisial”, untuk siswa kelas XII dan guru. Tiga mapel wajibnya **Matematika, Bahasa Inggris, dan Bahasa Indonesia**. Jawaban dinilai di server, penguasaan diperbarui dengan Bayesian Knowledge Tracing (BKT), lalu siswa mendapat urutan belajar berdasarkan penguasaan dan prasyarat per mapel.
 
 **Sudah menjalankan assessment_core.sql dan seed.sql?** Ikuti [panduan pembaruan sekolah](docs/UPDATE-SEKOLAH.md). Terapkan migration bank guru `20261023123926_teacher_managed_question_bank.sql` jika belum, lalu `20261027034148_required_subjects_grade12.sql`; jangan mengulang skema lama atau seed. Soal untuk siswa harus dibuat, diunggah, atau diimpor setelah ditinjau guru kelasnya. Soal seed tanpa pemilik guru dipertahankan sebagai konten pengembangan dan tidak otomatis masuk latihan. Tema terang/gelap tersedia melalui tombol Tema.
@@ -74,7 +76,7 @@ Lihat [dokumen BKT](docs/BKT.md), [arsitektur keamanan](docs/KEAMANAN.md), dan [
 3. Salin URL proyek, publishable key, dan **service role key** dari pengaturan API ke `.env.local`. Service role key tidak boleh dipublikasikan. RLS membatasi akses langsung Data API; penulisan asesmen memakai RPC administratif yang hanya bisa dipanggil service role setelah server memverifikasi pengguna dan otorisasinya.
 4. Pilih `APP_MODE=supabase`. Jika konfigurasi salah, aplikasi menampilkan kegagalan konfigurasi; data sekolah tidak diganti dengan demo secara diam-diam.
 5. Aktifkan provider email/password dan email confirmation. Atur **Site URL** dan redirect allowlist ke `http://127.0.0.1:3000` untuk lokal, atau origin HTTPS hosting Anda. Di template **Confirm signup**, gunakan tautan `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`. Route ini hanya menerima jenis `email` dan tidak menerima redirect bebas.
-Panduan khusus domain PKM, key Vercel, callback email, dan batas pendaftaran satu kelas tersedia di [konfigurasi produksi](docs/PRODUKSI-PKM.md).
+   Panduan khusus domain PKM, key Vercel, callback email, dan batas pendaftaran satu kelas tersedia di [konfigurasi produksi](docs/PRODUKSI-PKM.md).
 
 6. Restart aplikasi. Daftarkan akun siswa dan uji konfirmasi serta login. Untuk uji kelas, siapkan guru dengan prosedur di bawah.
 
