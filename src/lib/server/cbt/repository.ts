@@ -14,6 +14,7 @@ import { mode, supabaseServerConfig, cbtEnabled } from "../config";
 export { cbtEnabled } from "../config";
 import { repository } from "../repository";
 import { createCbtService } from "./engine";
+import { readMonitor } from "../assessment-support-store";
 let queue: Promise<unknown> = Promise.resolve();
 export function cbtRepository(actor: Profile): CbtRepository {
   if (mode() === "demo")
@@ -114,7 +115,23 @@ export function cbtRepository(actor: Profile): CbtRepository {
   };
 }
 export async function cbtService(actor: Profile) {
-  ensure(cbtEnabled(), "Ujian CBT sedang disiapkan oleh panitia.", 503);
+  ensure(cbtEnabled(), "Asesmen sedang disiapkan oleh panitia.", 503);
   const context = await repository().read(actor);
-  return createCbtService(cbtRepository(actor), context, actor);
+  const service = createCbtService(cbtRepository(actor), context, actor);
+  return {
+    ...service,
+    list: async () => {
+      const list = await service.list();
+      if (actor.role === "teacher") {
+        const ids = list.exams.flatMap(
+          (e) => e.participants?.map((s) => s.id) ?? [],
+        );
+        const monitor = await readMonitor(actor.id, ids);
+        for (const exam of list.exams)
+          for (const s of exam.participants ?? [])
+            s.monitor = monitor.find((m) => m.sitting_id === s.id) ?? null;
+      }
+      return list;
+    },
+  };
 }

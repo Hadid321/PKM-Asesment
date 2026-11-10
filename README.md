@@ -1,6 +1,6 @@
 # Adaptiva — Asesmen dan rekomendasi belajar adaptif
 
-**Ujian CBT:** mode terpisah berisi 24 soal per mapel, waktu standar 45 menit, autosave, pengacakan per peserta, serta hasil yang dirilis guru setelah penutupan. Tersedia 72 butir orisinal khusus CBT. Aktivasi sekolah memerlukan migration privat dan `CBT_ENABLED=true`; default production belum aktif. Lihat [panduan dan verifikasi CBT](docs/UJIAN-CBT.md).
+**Asesmen:** mode terpisah berisi 24 soal per mapel, waktu standar 45 menit, autosave, pengacakan per peserta, serta hasil yang dirilis guru setelah penutupan. Tersedia 72 butir orisinal khusus asesmen. Aktivasi sekolah memerlukan migration privat dan `CBT_ENABLED=true`; default production belum aktif. Lihat [panduan dan verifikasi asesmen](docs/UJIAN-CBT.md).
 
 **Kegiatan PKM SMAN 1 Parung Panjang:** alamat utama https://www.adaptiva-sman1pp.my.id. Lihat [panduan panitia](docs/PANDUAN-PANITIA-PKM.md) dan [verifikasi kesiapan 3 November](docs/VERIFIKASI-PKM-2026-11-03.md). Mode demo lokal kini menyiapkan 72 soal paket tiga mapel secara idempotent, di samping soal lama; data jawaban dan peran tetap. Penyimpanan sekolah tidak mengimpor apa pun saat halaman dibuka: bank sekolah tetap dikelola akun guru yang ditetapkan pengelola.
 

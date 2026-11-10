@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { AssessmentMonitor } from "./assessment-monitor";
+import { AssessmentBrief } from "./assessment-brief";
 import { Card, PageTitle } from "./ui";
 import { post } from "./actions";
 import { SUBJECT_NAMES, SUBJECTS, type Subject } from "@/lib/subjects";
@@ -16,6 +18,13 @@ export function CbtHome({ initial }: { initial: CbtList }) {
   const [subject, setSubject] = useState<Subject>("matematika");
   const [preview, setPreview] = useState<ExamItem[] | null>(null);
   const [customCsv, setCustomCsv] = useState("");
+  useEffect(() => {
+    if (!teacher) return;
+    const timer = setInterval(() => {
+      if (!busy && document.visibilityState === "visible") router.refresh();
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [teacher, busy, router]);
   async function showPreview() {
     setBusy(true);
     setError("");
@@ -64,7 +73,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
     <>
       <PageTitle
         eyebrow="ASESMEN SEKOLAH"
-        title="Ujian CBT"
+        title="Asesmen"
         description={
           teacher
             ? "Buka ujian untuk kelas Anda, pantau pengerjaan, lalu rilis hasil setelah ujian ditutup."
@@ -82,6 +91,18 @@ export function CbtHome({ initial }: { initial: CbtList }) {
           Kerjakan mandiri. Pengawasan di ruang ujian tetap diperlukan; aplikasi
           tidak mengawasi perangkat lain.
         </p>
+        <p>
+          Selama asesmen, perpindahan tab, fokus jendela, dan status koneksi
+          dicatat untuk guru. Isi tab lain dan kamera tidak direkam. Catatan
+          aktivitas perlu ditinjau bersama peserta; tidak menentukan nilai
+          secara otomatis.
+        </p>
+        {teacher && (
+          <p className="small muted">
+            Status peserta diperbarui otomatis sekitar setiap lima belas detik.
+            Waktu pada riwayat menunjukkan saat laporan diterima.
+          </p>
+        )}
       </Card>
       <button
         type="button"
@@ -147,7 +168,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                   required
                   minLength={4}
                   maxLength={120}
-                  defaultValue="Ujian CBT PKM"
+                  defaultValue="Asesmen PKM"
                   disabled={busy}
                 />
               </label>
@@ -320,6 +341,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                           <th>Status</th>
                           <th>Tersimpan</th>
                           <th>Nilai</th>
+                          <th>Aktivitas asesmen</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -333,11 +355,20 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                             </td>
                             <td>{s.answered}/24</td>
                             <td>{s.score ?? "—"}</td>
+                            <td>
+                              <AssessmentMonitor
+                                data={s.monitor}
+                                active={s.status === "active"}
+                              />
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  {e.status === "closed" && !!e.participants?.length && (
+                    <AssessmentBrief targetId={e.id} teacher />
+                  )}
                   {!e.participants?.length && (
                     <p>Belum ada peserta yang memulai.</p>
                   )}

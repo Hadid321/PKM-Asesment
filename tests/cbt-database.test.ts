@@ -43,11 +43,17 @@ beforeAll(async () => {
     "create table public.questions(id uuid primary key default gen_random_uuid(),question_text text,options jsonb); grant all on public.questions to service_role;",
   );
   await db.exec(await readFile(mutation, "utf8"));
+  await db.exec(
+    await readFile(
+      "supabase/migrations/20261110063036_assessment_activity_and_learning_briefs.sql",
+      "utf8",
+    ),
+  );
 }, 30000);
 afterAll(async () => db?.close());
 beforeEach(async () => {
   await db.exec(
-    "reset role; delete from private.cbt_sittings; delete from private.cbt_exams; delete from public.questions; update private.app_revision set revision=0 where id=1;",
+    "reset role; delete from private.assessment_events; delete from private.assessment_presence; delete from private.assessment_briefs; delete from private.cbt_sittings; delete from private.cbt_exams; delete from public.questions; update private.app_revision set revision=0 where id=1;",
   );
 });
 async function snapshot(actor: string) {
@@ -92,6 +98,126 @@ function repo(actor: string): CbtRepository {
   };
 }
 describe("Penyimpanan CBT privat", () => {
+  async function fixture() {
+    await db.exec("set role service_role");
+    const t = createCbtService(repo(teacher.id), context, teacher);
+    await t.execute({
+      action: "publish",
+      reviewed: true,
+      class_id: context.classes[0].id,
+      subject: "matematika",
+      title: "Asesmen dukungan",
+      duration_minutes: 45,
+    });
+    const exam = (await snapshot(teacher.id)).state.exams[0];
+    const studentService = createCbtService(repo(student.id), context, student);
+    const start = await studentService.execute({
+      action: "start",
+      exam_id: exam.id,
+      code: exam.access_code,
+    });
+    return { t, exam, sitting: start.sitting_id! };
+  }
+  it("aktivitas terisolasi, idempotent, tidak mengubah versi jawaban dan berhenti setelah ditutup", async () => {
+    const f = await fixture(),
+      event = { id: crypto.randomUUID(), kind: "hidden" };
+    const presence = {
+      visible: false,
+      focused: false,
+      online: true,
+      fullscreen: false,
+    };
+    const send = (actor: string, e = event) =>
+      db.query<{ accepted: boolean }>(
+        "select public.record_assessment_activity($1,$2,$3,$4) as accepted",
+        [actor, f.sitting, JSON.stringify([e]), JSON.stringify(presence)],
+      );
+    await expect(send(OTHER_STUDENT)).rejects.toThrow(/forbidden/);
+    const version = (await snapshot(student.id)).state.sittings[0].version;
+    expect((await send(student.id)).rows[0].accepted).toBe(true);
+    await send(student.id);
+    await expect(
+      send(student.id, { ...event, kind: "visible" }),
+    ).rejects.toThrow(/ID reused/);
+    const read = (actor: string) =>
+      db.query<{ data: { hidden_count: number; last_seen: string }[] }>(
+        "select public.read_assessment_monitor($1) as data",
+        [actor],
+      );
+    const first = (await read(teacher.id)).rows[0].data;
+    expect(first[0].hidden_count).toBe(1);
+    expect((await read(teacher.id)).rows[0].data[0].last_seen).toBe(
+      first[0].last_seen,
+    );
+    expect((await read(OTHER_TEACHER)).rows[0].data).toEqual([]);
+    expect((await snapshot(student.id)).state.sittings[0].version).toBe(
+      version,
+    );
+    await f.t.execute({ action: "close", exam_id: f.exam.id });
+    expect(
+      (await send(student.id, { ...event, id: crypto.randomUUID() })).rows[0]
+        .accepted,
+    ).toBe(false);
+  });
+  it("cache AI memeriksa akses dan rilis, klaim tunggal, serta pemulihan lease", async () => {
+    const f = await fixture();
+    const claim = (actor: string, id: string, kind: string) =>
+      db.query<{ data: { status: string; claim_id: string } }>(
+        "select public.claim_assessment_brief($1,$2,$3) as data",
+        [actor, id, kind],
+      );
+    await expect(claim(student.id, f.sitting, "student")).rejects.toThrow(
+      /forbidden/,
+    );
+    await expect(claim(teacher.id, f.exam.id, "teacher")).rejects.toThrow(
+      /forbidden/,
+    );
+    await f.t.execute({ action: "close", exam_id: f.exam.id });
+    const first = (await claim(teacher.id, f.exam.id, "teacher")).rows[0].data;
+    expect(first.status).toBe("claimed");
+    expect(
+      (await claim(teacher.id, f.exam.id, "teacher")).rows[0].data.status,
+    ).toBe("pending");
+    await db.query(
+      "update private.assessment_briefs set claimed_at=clock_timestamp()-interval '100 seconds' where target_id=$1",
+      [f.exam.id],
+    );
+    const next = (await claim(teacher.id, f.exam.id, "teacher")).rows[0].data;
+    expect(next.status).toBe("claimed");
+    expect(next.claim_id).not.toBe(first.claim_id);
+    const finish = (id: string) =>
+      db.query<{ ok: boolean }>(
+        "select public.complete_assessment_brief($1,$2,'teacher',$3,$4,'template') as ok",
+        [
+          teacher.id,
+          f.exam.id,
+          id,
+          JSON.stringify({
+            overview: "Panduan asesmen",
+            actions: [],
+            reflection: "Diskusikan bersama guru.",
+          }),
+        ],
+      );
+    expect((await finish(first.claim_id)).rows[0].ok).toBe(false);
+    expect((await finish(next.claim_id)).rows[0].ok).toBe(true);
+    expect(
+      (await claim(teacher.id, f.exam.id, "teacher")).rows[0].data.status,
+    ).toBe("ready");
+    await expect(claim(OTHER_TEACHER, f.exam.id, "teacher")).rejects.toThrow(
+      /forbidden/,
+    );
+    await expect(claim(student.id, f.sitting, "student")).rejects.toThrow(
+      /forbidden/,
+    );
+    await f.t.execute({ action: "release", exam_id: f.exam.id });
+    expect(
+      (await claim(student.id, f.sitting, "student")).rows[0].data.status,
+    ).toBe("claimed");
+    await expect(claim(OTHER_STUDENT, f.sitting, "student")).rejects.toThrow(
+      /forbidden/,
+    );
+  });
   it("guard paket dan bank latihan berlaku lintas guru di database", async () => {
     const other = context.profiles.find((p) => p.id === OTHER_TEACHER)!;
     const room = {
@@ -194,6 +320,17 @@ describe("Penyimpanan CBT privat", () => {
   it("RPC dan snapshot kunci tidak dapat dibaca token siswa atau anonymous", async () => {
     for (const role of ["anon", "authenticated"]) {
       await db.exec("set role " + role);
+      await expect(
+        db.query("select * from private.assessment_events"),
+      ).rejects.toThrow(/permission/);
+      await expect(
+        db.query("select public.read_assessment_monitor($1)", [DEMO_TEACHER]),
+      ).rejects.toThrow(/permission/);
+      await expect(
+        db.query("select public.claim_assessment_brief($1,$1,'student')", [
+          DEMO_STUDENT,
+        ]),
+      ).rejects.toThrow(/permission/);
       await expect(
         db.query("select public.read_cbt_state($1)", [DEMO_STUDENT]),
       ).rejects.toThrow(/permission/);

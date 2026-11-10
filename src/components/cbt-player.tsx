@@ -5,6 +5,8 @@ import type { CbtView } from "@/lib/server/cbt/engine";
 import type { Option } from "@/lib/types";
 import { Card, percent } from "./ui";
 import { shouldAcceptCbtView } from "@/lib/cbt/client-state";
+import { useAssessmentActivity } from "./use-assessment-activity";
+import { AssessmentBrief } from "./assessment-brief";
 async function postExam<T>(body: unknown): Promise<T> {
   const r = await fetch("/api/cbt", {
     method: "POST",
@@ -23,6 +25,7 @@ const keys = ["A", "B", "C", "D"] as const;
 type Pending = { id: string; option: Option | null; flagged: boolean };
 export function CbtPlayer({ initial }: { initial: CbtView }) {
   const [data, setData] = useState(initial);
+  useAssessmentActivity(data.id, data.status === "active");
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -171,6 +174,8 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
       });
       applyView(r.view);
     } catch (e) {
+      if ((e as Error & { status?: number }).status === 409)
+        await refresh(true);
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -180,7 +185,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
     return (
       <div className="cbt-player">
         <Card className="prose">
-          <p className="eyebrow">UJIAN CBT</p>
+          <p className="eyebrow">ASESMEN</p>
           <h1>Jawaban sudah dikumpulkan</h1>
           <p>
             {data.title} · {data.answered} dari 24 soal dijawab.
@@ -203,6 +208,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
                 disimpan terpisah agar nilai latihan sebelumnya tetap utuh; ini
                 bukan sertifikasi penguasaan.
               </p>
+              <AssessmentBrief targetId={data.id} />
             </>
           ) : (
             <p className="notice">
@@ -248,7 +254,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
     <div className="cbt-player">
       <div className="cbt-top">
         <div>
-          <p className="eyebrow">UJIAN CBT</p>
+          <p className="eyebrow">ASESMEN</p>
           <h1>{data.title}</h1>
         </div>
         <div className="cbt-clock" role="timer" aria-label="Sisa waktu ujian">
@@ -261,6 +267,10 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
       <p className="small muted">
         Jawaban tersimpan otomatis. Waktu mengikuti server dan tetap berjalan
         jika Anda berpindah halaman.
+      </p>
+      <p className="small muted">
+        Perpindahan tab, fokus jendela, dan status koneksi selama asesmen
+        dicatat untuk guru.
       </p>
       {warning && (
         <p className="notice" role="status">

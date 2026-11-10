@@ -11,6 +11,7 @@ import {
   type Sitting,
 } from "../../cbt/model";
 import type { Profile, State } from "../../types";
+import type { Monitor } from "../../assessment-support";
 import { examItems } from "./content";
 import { prepareExamItems, questionFingerprint } from "./bank";
 function shuffle<T>(values: readonly T[]): T[] {
@@ -195,6 +196,7 @@ export function createCbtService(
                   actor.role === "teacher"
                     ? sittings.map((s) => ({
                         id: s.id,
+                        monitor: null as Monitor | null,
                         name:
                           context.profiles.find((p) => p.id === s.student_id)
                             ?.full_name ?? "Peserta",

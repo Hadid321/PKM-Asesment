@@ -188,13 +188,13 @@ export function StudentDashboard({ data }: { data: DashboardData }) {
       {data.cbt && (
         <Card className="mb">
           <p className="eyebrow">ASESMEN KELAS</p>
-          <h2>Siap mengikuti ujian CBT?</h2>
+          <h2>Siap mengikuti asesmen?</h2>
           <p>
             24 soal per mapel dengan waktu pengerjaan. Siapkan kode ujian dari
             guru; hasil dibuka setelah ujian selesai.
           </p>
           <Link className="btn primary mt" href="/ujian">
-            Buka Ujian CBT
+            Buka Asesmen
           </Link>
         </Card>
       )}
@@ -375,13 +375,13 @@ export function TeacherDashboard({ data }: { data: DashboardData }) {
       {data.cbt && (
         <Card className="mb">
           <p className="eyebrow">ASESMEN KELAS</p>
-          <h2>Kelola ujian CBT</h2>
+          <h2>Kelola asesmen</h2>
           <p>
             Tinjau paket, buka ujian untuk kelas, lalu rilis hasil setelah semua
             pengerjaan dikumpulkan.
           </p>
           <Link className="btn primary mt" href="/ujian">
-            Kelola Ujian CBT
+            Kelola Asesmen
           </Link>
         </Card>
       )}

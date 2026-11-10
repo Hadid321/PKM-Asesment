@@ -218,3 +218,31 @@
   border: 1px solid var(--line);
   padding: 1rem;
 }
+.assessment-monitor {
+  min-width: 17rem;
+  max-width: 25rem;
+}
+.assessment-monitor p {
+  margin: 0.5rem 0;
+}
+.assessment-monitor summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: list-item;
+}
+.assessment-monitor ul {
+  padding-left: 1.25rem;
+  line-height: 1.7;
+}
+.assessment-brief {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.assessment-brief h3 {
+  margin-top: 1rem;
+}
+.assessment-brief ol {
+  padding-left: 1.5rem;
+  line-height: 1.8;
+}

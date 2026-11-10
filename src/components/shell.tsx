@@ -88,7 +88,7 @@ export function Shell({
   if (cbt)
     items.splice(1, 0, {
       href: "/ujian",
-      label: "Ujian CBT",
+      label: "Asesmen",
       icon: ClipboardList,
     });
   const current =

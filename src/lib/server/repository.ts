@@ -226,7 +226,7 @@ export const supabaseRepository: Repository = {
       );
       if (error?.message.includes("CBT_ACTIVE_PRACTICE_OVERLAP"))
         throw new AppError(
-          "Soal tersebut sedang dipakai dalam ujian CBT. Jangan membuka kuncinya melalui bank latihan sebelum hasil seluruh ujian terkait dirilis.",
+          "Soal tersebut sedang dipakai dalam asesmen. Jangan membuka kuncinya melalui bank latihan sebelum hasil seluruh ujian terkait dirilis.",
           409,
         );
       if (error)

@@ -8,7 +8,7 @@ export default async function Exams() {
     return (
       <>
         <PageTitle
-          title="Ujian CBT"
+          title="Asesmen"
           description="Ujian sedang disiapkan oleh panitia."
         />
         <Card>Guru akan memberi tahu saat ujian dapat dibuka.</Card>
