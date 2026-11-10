@@ -1,0 +1,220 @@
+.cbt-intro {
+  margin-bottom: 1.5rem;
+}
+.cbt-exam-list {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.cbt-exam-list h2 {
+  margin-bottom: 0.6rem;
+}
+.cbt-exam-list p {
+  margin: 0.6rem 0;
+}
+.cbt-code {
+  font-family: monospace;
+  letter-spacing: 0.12em;
+  overflow-wrap: anywhere;
+}
+.cbt-publish {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.cbt-publish label,
+.cbt-code-form label {
+  display: grid;
+  gap: 0.4rem;
+}
+.cbt-publish p {
+  grid-column: 1/-1;
+}
+.cbt-code-form {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.cbt-controls {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+.cbt-top {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--surface);
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+.cbt-top h1 {
+  font-size: 1.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.cbt-top > div:first-child {
+  min-width: 0;
+}
+.cbt-question h2 {
+  scroll-margin-top: 10rem;
+}
+.cbt-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.6rem;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.65rem;
+  flex-shrink: 0;
+}
+.cbt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.cbt-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  line-height: 1.8;
+  font-weight: 400;
+}
+.cbt-prompt {
+  margin: 1rem 0 1.5rem;
+  font-weight: 600;
+}
+.cbt-passage {
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  border-left: 3px solid var(--line-strong);
+  background: var(--surface);
+  border-radius: 0.4rem;
+}
+.cbt-flag {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1rem 0;
+  min-height: 44px;
+}
+.cbt-navigator {
+  align-self: start;
+  position: sticky;
+  top: 10rem;
+}
+.cbt-navigator > .btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+.cbt-number-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.cbt-number-grid button {
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 0.4rem;
+  position: relative;
+}
+.cbt-number-grid button.answered {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.cbt-number-grid button.flagged {
+  border: 2px dashed var(--warning);
+}
+.cbt-number-grid button[aria-current] {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.cbt-number-grid button span {
+  position: absolute;
+  right: 2px;
+  top: -5px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-radius: 50%;
+  padding: 0 4px;
+}
+.cbt-player .prose h1 {
+  font-size: 1.8rem;
+}
+.cbt-player .prose h3 {
+  margin-top: 1rem;
+}
+@media (max-width: 1100px) {
+  .cbt-grid {
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+  .cbt-clock {
+    font-size: 1.25rem;
+  }
+}
+@media (max-width: 760px) {
+  .cbt-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cbt-navigator {
+    position: static;
+    order: -1;
+  }
+  .cbt-number-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .cbt-publish {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cbt-top h1 {
+    font-size: 1.35rem;
+  }
+  .cbt-clock {
+    padding: 0.4rem 0.5rem;
+  }
+  .cbt-question {
+    padding: 1rem;
+  }
+  .cbt-controls > .btn {
+    flex: 1;
+  }
+  .cbt-navigator > .btn {
+    width: auto;
+    margin-right: 0.75rem;
+  }
+}
+.cbt-preview,
+.cbt-review {
+  grid-column: 1/-1;
+}
+.cbt-publish .cbt-review {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.cbt-review input {
+  width: auto;
+  min-height: 24px;
+}
+.cbt-preview {
+  max-height: 32rem;
+  overflow: auto;
+  border: 1px solid var(--line);
+  padding: 1rem;
+}

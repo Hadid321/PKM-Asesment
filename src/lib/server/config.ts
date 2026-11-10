@@ -69,3 +69,6 @@ export function applicationOrigin() {
     );
   }
 }
+export function cbtEnabled() {
+  return mode() === "demo" || process.env.CBT_ENABLED === "true";
+}

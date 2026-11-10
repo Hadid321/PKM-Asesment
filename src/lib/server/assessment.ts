@@ -27,6 +27,7 @@ import type { Profile, Question, QuizSession, State } from "../types";
 import { scopeState, type Repository } from "./repository";
 import type { Subject } from "../subjects";
 import { curriculumPackage } from "./curriculum-content";
+import { cbtEnabled } from "./config";
 const now = () => new Date().toISOString();
 function student(actor: Profile) {
   ensure(actor.role === "student", "Fitur ini hanya untuk siswa.", 403);
@@ -578,6 +579,7 @@ export async function dashboard(
   );
   return {
     subject: subject ?? null,
+    cbt: cbtEnabled(),
     activeSession,
     activeTopic,
     actor,

@@ -38,10 +38,12 @@ function NavigationHint() {
 export function Shell({
   actor,
   mode,
+  cbt = false,
   children,
 }: {
   actor: Profile;
   mode: string;
+  cbt?: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -83,6 +85,12 @@ export function Shell({
         { href: "/impor", label: "Unggah soal", icon: Upload },
         { href: "/rekap", label: "Hasil asesmen", icon: ListOrdered },
       ];
+  if (cbt)
+    items.splice(1, 0, {
+      href: "/ujian",
+      label: "Ujian CBT",
+      icon: ClipboardList,
+    });
   const current =
     items.find((i) => pathname.startsWith(i.href))?.label ??
     (pathname.startsWith("/kuis")

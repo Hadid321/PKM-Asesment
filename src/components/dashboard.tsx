@@ -185,6 +185,19 @@ export function StudentDashboard({ data }: { data: DashboardData }) {
           </span>
         }
       />
+      {data.cbt && (
+        <Card className="mb">
+          <p className="eyebrow">ASESMEN KELAS</p>
+          <h2>Siap mengikuti ujian CBT?</h2>
+          <p>
+            24 soal per mapel dengan waktu pengerjaan. Siapkan kode ujian dari
+            guru; hasil dibuka setelah ujian selesai.
+          </p>
+          <Link className="btn primary mt" href="/ujian">
+            Buka Ujian CBT
+          </Link>
+        </Card>
+      )}
       <section className="practice-panel">
         <div className="practice-content">
           <div className="panel-eyebrow">
@@ -359,6 +372,19 @@ export function TeacherDashboard({ data }: { data: DashboardData }) {
           </Link>
         }
       />
+      {data.cbt && (
+        <Card className="mb">
+          <p className="eyebrow">ASESMEN KELAS</p>
+          <h2>Kelola ujian CBT</h2>
+          <p>
+            Tinjau paket, buka ujian untuk kelas, lalu rilis hasil setelah semua
+            pengerjaan dikumpulkan.
+          </p>
+          <Link className="btn primary mt" href="/ujian">
+            Kelola Ujian CBT
+          </Link>
+        </Card>
+      )}
       <section className="practice-panel teacher-panel">
         <div className="practice-content">
           <div className="panel-eyebrow">

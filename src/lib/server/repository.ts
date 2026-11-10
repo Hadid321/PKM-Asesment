@@ -224,6 +224,11 @@ export const supabaseRepository: Repository = {
         "commit_assessment_state",
         { actor_id: actor.id, expected_revision: revision, changes },
       );
+      if (error?.message.includes("CBT_ACTIVE_PRACTICE_OVERLAP"))
+        throw new AppError(
+          "Soal tersebut sedang dipakai dalam ujian CBT. Jangan membuka kuncinya melalui bank latihan sebelum hasil seluruh ujian terkait dirilis.",
+          409,
+        );
       if (error)
         throw new AppError(
           "Perubahan tidak dapat disimpan. Periksa konfigurasi database atau coba lagi.",
