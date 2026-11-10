@@ -65,6 +65,31 @@ await check("pratinjau dan publish hanya guru; CSRF ditolak", async () => {
 const teacher = (await req("teacher")).data;
 const classId = teacher.classes[0].id;
 let exam, view;
+const nonce = crypto.randomUUID().slice(0, 8);
+const topics = (
+  await (
+    await fetch(base + "/api/dashboard", {
+      headers: { Cookie: cookies.teacher },
+    })
+  ).json()
+).topics;
+const items = (await req("teacher", null, "?preview=matematika")).data.items;
+const csv = [
+  "topik,pertanyaan,opsi_a,opsi_b,opsi_c,opsi_d,kunci,kesulitan,pembahasan",
+  ...items.map((q) =>
+    [
+      topics.find((t) => t.id === q.topic_id).slug,
+      "Simulasi " + nonce + ": " + q.question_text,
+      ...Object.values(q.options),
+      q.correct_option,
+      "sedang",
+      q.explanation,
+    ]
+      .map((v) => '"' + v.replaceAll('"', '""') + '"')
+      .join(","),
+  ),
+].join("\n");
+
 await check("GET dan POST preview memiliki kontrak yang sama", async () => {
   const get = await req("teacher", null, "?preview=matematika");
   const post = await req("teacher", {
@@ -76,19 +101,15 @@ await check("GET dan POST preview memiliki kontrak yang sama", async () => {
   assert.ok(post.data.items[0].correct_option);
 });
 await check("guru menerbitkan paket yang ditinjau", async () => {
-  const existing = teacher.exams.find(
-    (e) => e.title === "QA HTTP CBT" && e.status === "open",
-  );
-  const r = existing
-    ? { status: 200, data: { exam_id: existing.id } }
-    : await req("teacher", {
-        action: "publish",
-        reviewed: true,
-        class_id: classId,
-        subject: "matematika",
-        title: "QA HTTP CBT",
-        duration_minutes: 45,
-      });
+  const r = await req("teacher", {
+    action: "publish",
+    reviewed: true,
+    class_id: classId,
+    subject: "matematika",
+    title: "QA HTTP Asesmen " + nonce,
+    duration_minutes: 45,
+    custom_csv: csv,
+  });
   assert.equal(r.status, 200, JSON.stringify(r.data));
   exam = (await req("teacher")).data.exams.find((e) => e.id === r.data.exam_id);
 });
@@ -198,6 +219,7 @@ await check(
           class_id: classId,
           subject: "matematika",
           title: "Ulang paket terpapar",
+          custom_csv: csv,
           duration_minutes: 45,
         })
       ).status,

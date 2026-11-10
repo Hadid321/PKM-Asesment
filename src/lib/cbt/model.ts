@@ -30,6 +30,14 @@ export const examSchema = z.object({
   released: z.boolean(),
   created_at: z.iso.datetime(),
   closed_at: z.iso.datetime().nullable(),
+  focus_guard: z.boolean().optional(),
+  focus_rules: z
+    .object({
+      version: z.literal("focus-v1"),
+      limit: z.literal(3),
+      grace_ms: z.literal(2000),
+    })
+    .optional(),
   items: z.array(itemSchema).length(24),
   fingerprints: z.array(z.string().regex(/^[a-f0-9]{64}$/)).length(24),
 });
@@ -50,6 +58,7 @@ export const sittingSchema = z.object({
     z.object({ option: option.nullable(), flagged: z.boolean() }),
   ),
   priors: z.record(id, z.number().min(0).max(1)),
+  policy_acknowledged_at: z.iso.datetime().optional(),
 });
 export const cbtStateSchema = z.object({
   exams: z.array(examSchema),
@@ -74,6 +83,7 @@ export const cbtInput = z.discriminatedUnion("action", [
     .object({
       action: z.literal("publish"),
       reviewed: z.literal(true),
+      focus_guard: z.boolean().default(false),
       custom_csv: z.string().max(500000).optional(),
       class_id: id,
       subject: z.enum(SUBJECTS),
@@ -86,6 +96,7 @@ export const cbtInput = z.discriminatedUnion("action", [
       action: z.literal("start"),
       exam_id: id,
       code: z.string().trim().toUpperCase().min(6).max(20),
+      acknowledge_policy: z.boolean().optional(),
     })
     .strict(),
   z

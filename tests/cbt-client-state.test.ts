@@ -37,3 +37,10 @@ describe("Respons CBT yang datang tidak berurutan", () => {
     ).toBe(false);
   });
 });
+
+it("respons lama tidak membatalkan penghentian atau izin baru", () => {
+  const locked = { ...base, focus: { version: 3 } },
+    resumed = { ...base, focus: { version: 4 } };
+  expect(shouldAcceptCbtView(resumed, locked)).toBe(false);
+  expect(shouldAcceptCbtView(locked, resumed)).toBe(true);
+});

@@ -6,6 +6,7 @@ import type { Option } from "@/lib/types";
 import { Card, percent } from "./ui";
 import { shouldAcceptCbtView } from "@/lib/cbt/client-state";
 import { useAssessmentActivity } from "./use-assessment-activity";
+import { AssessmentRanking } from "./assessment-ranking";
 import { AssessmentBrief } from "./assessment-brief";
 async function postExam<T>(body: unknown): Promise<T> {
   const r = await fetch("/api/cbt", {
@@ -25,7 +26,6 @@ const keys = ["A", "B", "C", "D"] as const;
 type Pending = { id: string; option: Option | null; flagged: boolean };
 export function CbtPlayer({ initial }: { initial: CbtView }) {
   const [data, setData] = useState(initial);
-  useAssessmentActivity(data.id, data.status === "active");
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +40,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
       ),
     ),
   );
-  const offset = useRef(0);
+  const offset = useRef<number | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousIndex = useRef(0);
   const fetching = useRef<AbortController | null>(null);
@@ -74,15 +74,19 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
     },
     [data.id, applyView],
   );
+  useAssessmentActivity(data.id, data.status === "active", (focus) => {
+    if (focus.version !== latest.current.focus.version) void refresh(true);
+  });
   useEffect(() => {
     if (data.status !== "active") return;
-    offset.current = Date.parse(initial.server_time) - Date.now();
+    offset.current ??= Date.parse(initial.server_time) - Date.now();
     let lastExpiryCheck = 0;
     const tick = () => {
       const seconds = Math.max(
         0,
         Math.ceil(
-          (Date.parse(data.deadline_at) - Date.now() - offset.current) / 1000,
+          (Date.parse(data.deadline_at) - Date.now() - (offset.current ?? 0)) /
+            1000,
         ),
       );
       setRemaining(seconds);
@@ -92,12 +96,21 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
       }
     };
     const timer = setInterval(tick, 1000);
-    const statusTimer = setInterval(() => void refresh(), 30000);
+    const statusTimer = setInterval(
+      () => void refresh(),
+      data.focus.locked ? 5000 : 30000,
+    );
     return () => {
       clearInterval(timer);
       clearInterval(statusTimer);
     };
-  }, [data.status, data.deadline_at, initial.server_time, refresh]);
+  }, [
+    data.status,
+    data.deadline_at,
+    data.focus.locked,
+    initial.server_time,
+    refresh,
+  ]);
   useEffect(() => {
     function visible() {
       if (document.hidden) return;
@@ -208,6 +221,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
                 disimpan terpisah agar nilai latihan sebelumnya tetap utuh; ini
                 bukan sertifikasi penguasaan.
               </p>
+              <AssessmentRanking rows={data.ranking} />
               <AssessmentBrief targetId={data.id} />
             </>
           ) : (
@@ -250,6 +264,40 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
         ))}
       </div>
     );
+  if (data.focus.locked)
+    return (
+      <div className="cbt-player">
+        <Card className="prose focus-stop">
+          <p className="eyebrow">
+            ASESMEN · {data.focus.strikes}/3 PELANGGARAN
+          </p>
+          <h1>Pengerjaan dihentikan sementara</h1>
+          <p role="alert">{data.focus.reason}</p>
+          <p>
+            {data.answered} dari {data.total} jawaban sudah tersimpan. Sisa
+            waktu {Math.floor(remaining / 60)} menit {remaining % 60} detik.
+          </p>
+          <p>
+            Temui guru pengawas. Jika izin diberikan, halaman ini memeriksa
+            status otomatis setiap lima detik. Anda tidak perlu masuk ulang.
+          </p>
+          {pending && (
+            <p className="notice">
+              Ada pilihan terakhir yang belum tersimpan. Periksa kembali nomor
+              tersebut setelah diizinkan lanjut.
+            </p>
+          )}
+          <button className="btn primary" onClick={() => void refresh(true)}>
+            Periksa izin lanjut
+          </button>
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+        </Card>
+      </div>
+    );
   return (
     <div className="cbt-player">
       <div className="cbt-top">
@@ -272,6 +320,14 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
         Perpindahan tab, fokus jendela, dan status koneksi selama asesmen
         dicatat untuk guru.
       </p>
+      {data.focus.enabled && (
+        <p className="notice" role="status">
+          Aturan fokus aktif · {data.focus.strikes}/3 pelanggaran. Meninggalkan
+          tab lebih dari dua detik atau keluar dari halaman asesmen dihitung
+          satu kali per kejadian. Pelanggaran ketiga menghentikan pengerjaan;
+          waktu tetap berjalan.
+        </p>
+      )}
       {warning && (
         <p className="notice" role="status">
           {warning}

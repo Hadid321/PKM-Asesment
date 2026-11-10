@@ -4,6 +4,16 @@ import { readFile, mkdir, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { mode, supabaseServerConfig } from "./config";
+import {
+  applyFocus,
+  focusView,
+  newFocusControl,
+  resumeFocus,
+  type FocusControl,
+  type FocusState,
+} from "../assessment-focus";
+import type { CbtState } from "../cbt/model";
+import type { RankRow } from "./cbt/ranking";
 import { AppError, ensure } from "../domain/errors";
 import type {
   ActivityInput,
@@ -12,6 +22,11 @@ import type {
   LearningBrief,
 } from "../assessment-support";
 type LocalState = {
+  controls?: Record<string, FocusControl>;
+  actions?: Record<
+    string,
+    { sitting_id: string; teacher_id: string; reason: string }
+  >;
   events: {
     id: string;
     sitting_id: string;
@@ -22,7 +37,7 @@ type LocalState = {
   briefs: Record<string, BriefRecord>;
 };
 let queue: Promise<unknown> = Promise.resolve();
-async function local<T>(fn: (state: LocalState) => T) {
+async function local<T>(fn: (state: LocalState) => T | Promise<T>) {
   const task = queue.then(async () => {
     const file = path.join(process.cwd(), ".data", "assessment-support.json");
     let state: LocalState;
@@ -32,7 +47,7 @@ async function local<T>(fn: (state: LocalState) => T) {
       if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
       state = { events: [], presence: {}, briefs: {} };
     }
-    const result = fn(state);
+    const result = await fn(state);
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file + ".tmp", JSON.stringify(state), { mode: 0o600 });
     await rename(file + ".tmp", file);
@@ -54,7 +69,11 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
     );
   return data as T;
 }
-export async function recordActivity(actorId: string, input: ActivityInput) {
+export async function recordActivity(
+  actorId: string,
+  input: ActivityInput,
+  enabled = false,
+) {
   if (mode() !== "demo")
     return rpc<boolean>("record_assessment_activity", {
       actor_id: actorId,
@@ -64,6 +83,7 @@ export async function recordActivity(actorId: string, input: ActivityInput) {
     let count = s.events.filter(
       (e) => e.sitting_id === input.sitting_id,
     ).length;
+    const fresh: ActivityInput["events"] = [];
     for (const e of input.events) {
       const old = s.events.find((x) => x.id === e.id);
       if (old) {
@@ -74,12 +94,19 @@ export async function recordActivity(actorId: string, input: ActivityInput) {
         );
         continue;
       }
-      if (count++ < 1000)
+      if (count++ < 1000) {
+        fresh.push(e);
         s.events.push({
           ...e,
           sitting_id: input.sitting_id,
           received_at: new Date().toISOString(),
         });
+      }
+    }
+    if (enabled) {
+      s.controls ??= {};
+      const c = (s.controls[input.sitting_id] ??= newFocusControl());
+      if (!applyFocus(c, { ...input, events: fresh }, Date.now())) return true;
     }
     const events = s.events.filter((e) => e.sitting_id === input.sitting_id);
     s.presence[input.sitting_id] = {
@@ -172,5 +199,87 @@ export async function completeBrief(
     row.brief = brief;
     row.source = source;
     return true;
+  });
+}
+
+export async function readFocus(
+  actorId: string,
+  ids: string[],
+  enabledIds: string[],
+) {
+  if (mode() !== "demo")
+    return rpc<(FocusState & { sitting_id: string })[]>(
+      "read_assessment_focus",
+      { actor_id: actorId, sitting_ids: ids },
+    );
+  return local((s) =>
+    ids.map((id) => ({
+      sitting_id: id,
+      ...focusView(enabledIds.includes(id), s.controls?.[id]),
+    })),
+  );
+}
+export async function readReleasedRanking(actorId: string, examId: string) {
+  return rpc<RankRow[] | null>("read_assessment_ranking", {
+    actor_id: actorId,
+    exam_id: examId,
+  });
+}
+export async function unlockFocus(
+  actorId: string,
+  input: { sitting_id: string; request_id: string; reason: string },
+) {
+  if (mode() !== "demo")
+    return rpc<boolean>("resume_assessment_focus", {
+      actor_id: actorId,
+      ...input,
+    });
+  return local((s) => {
+    s.actions ??= {};
+    const old = s.actions[input.request_id];
+    if (old) {
+      ensure(
+        old.sitting_id === input.sitting_id &&
+          old.teacher_id === actorId &&
+          old.reason === input.reason,
+        "Permintaan izin sudah dipakai.",
+        409,
+      );
+      return true;
+    }
+    const c = s.controls?.[input.sitting_id];
+    ensure(c?.locked, "Pengerjaan tidak sedang dihentikan.", 409);
+    s.actions[input.request_id] = {
+      sitting_id: input.sitting_id,
+      teacher_id: actorId,
+      reason: input.reason,
+    };
+    resumeFocus(c);
+    return true;
+  });
+}
+export function guardFocusWrites(
+  next: CbtState,
+  old: CbtState,
+  commit: () => Promise<void>,
+) {
+  return local(async (s) => {
+    for (const n of next.sittings) {
+      const before = old.sittings.find((x) => x.id === n.id),
+        e = next.exams.find((e) => e.id === n.exam_id);
+      if (!e?.focus_guard || !before || !s.controls?.[n.id]?.locked) continue;
+      ensure(
+        JSON.stringify(n.answers) === JSON.stringify(before.answers) &&
+          !(
+            before.status === "active" &&
+            n.status === "submitted" &&
+            e.status !== "closed" &&
+            Date.parse(before.deadline_at) > Date.now()
+          ),
+        "Pengerjaan dihentikan sementara. Hubungi guru untuk izin lanjut.",
+        409,
+      );
+    }
+    await commit();
   });
 }

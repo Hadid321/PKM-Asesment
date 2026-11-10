@@ -36,7 +36,17 @@ export function AssessmentMonitor({
         : "Halaman tidak terlihat";
   return (
     <div className="assessment-monitor">
-      <strong>{status}</strong>
+      <strong>
+        {data.focus?.locked
+          ? "Dihentikan sementara · tiga pelanggaran"
+          : status}
+      </strong>
+      {data.focus?.enabled && (
+        <p className="small">
+          Pelanggaran saat ini {data.focus.strikes}/3 · Total riwayat{" "}
+          {data.focus.total_strikes}
+        </p>
+      )}
       <p className="small">
         Keluar halaman: {data.left_count} · Meninggalkan tab:{" "}
         {data.hidden_count} · Kehilangan fokus: {data.blur_count} · Keluar layar

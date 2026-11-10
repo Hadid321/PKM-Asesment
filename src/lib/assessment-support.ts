@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { FocusState } from "./assessment-focus";
 export const activityKinds = [
   "opened",
   "hidden",
@@ -27,6 +28,8 @@ export const presenceSchema = z
     focused: z.boolean(),
     online: z.boolean(),
     fullscreen: z.boolean(),
+    page_id: z.uuid().optional(),
+    sequence: z.number().int().min(1).max(1000000).optional(),
   })
   .strict();
 export const activityInput = z
@@ -40,6 +43,7 @@ export const activityInput = z
   .strict();
 export type ActivityInput = z.infer<typeof activityInput>;
 export type Monitor = z.infer<typeof presenceSchema> & {
+  focus?: FocusState;
   sitting_id: string;
   last_seen: string;
   hidden_count: number;
@@ -49,6 +53,13 @@ export type Monitor = z.infer<typeof presenceSchema> & {
   offline_count: number;
   recent: { kind: (typeof activityKinds)[number]; received_at: string }[];
 };
+export const focusResumeInput = z
+  .object({
+    sitting_id: z.uuid(),
+    request_id: z.uuid(),
+    reason: z.string().trim().min(8).max(300),
+  })
+  .strict();
 export const briefInput = z.object({ target_id: z.uuid() }).strict();
 export const briefSchema = z
   .object({

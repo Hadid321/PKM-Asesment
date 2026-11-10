@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AssessmentRanking } from "./assessment-ranking";
+import { FocusResume } from "./focus-resume";
 import { AssessmentMonitor } from "./assessment-monitor";
 import { AssessmentBrief } from "./assessment-brief";
 import { Card, PageTitle } from "./ui";
@@ -124,6 +126,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                 void run({
                   action: "publish",
                   reviewed: f.get("reviewed") === "on",
+                  focus_guard: f.get("focus_guard") === "on",
                   class_id: f.get("class_id"),
                   subject: f.get("subject"),
                   title: f.get("title"),
@@ -242,6 +245,16 @@ export function CbtHome({ initial }: { initial: CbtList }) {
               <label className="cbt-review">
                 <input
                   type="checkbox"
+                  name="focus_guard"
+                  defaultChecked
+                  disabled={busy}
+                />{" "}
+                Aturan fokus: hentikan sementara setelah tiga pelanggaran. Guru
+                dapat memberi izin lanjut dengan alasan.
+              </label>
+              <label className="cbt-review">
+                <input
+                  type="checkbox"
                   name="reviewed"
                   required
                   disabled={busy}
@@ -285,6 +298,12 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                 {e.count} soal · {e.duration_minutes} menit ·{" "}
                 {e.status === "open" ? "Ujian dibuka" : "Ujian ditutup"}
               </p>
+              <p className="small muted">
+                {e.focus_guard
+                  ? "Aturan fokus aktif: tiga pelanggaran menghentikan pengerjaan sementara."
+                  : "Pemantauan aktivitas tanpa penghentian otomatis."}
+              </p>
+              <AssessmentRanking rows={e.ranking} teacher={teacher} />
               {teacher ? (
                 <>
                   <p>
@@ -350,7 +369,9 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                             <td>{s.name}</td>
                             <td>
                               {s.status === "active"
-                                ? "Mengerjakan"
+                                ? s.monitor?.focus?.locked
+                                  ? "Dihentikan sementara"
+                                  : "Mengerjakan"
                                 : "Dikumpulkan"}
                             </td>
                             <td>{s.answered}/24</td>
@@ -360,6 +381,15 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                                 data={s.monitor}
                                 active={s.status === "active"}
                               />
+                              {s.status === "active" &&
+                                e.status === "open" &&
+                                s.monitor?.focus?.locked && (
+                                  <FocusResume
+                                    sittingId={s.id}
+                                    name={s.name}
+                                    onDone={() => router.refresh()}
+                                  />
+                                )}
                             </td>
                           </tr>
                         ))}
@@ -391,6 +421,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                       action: "start",
                       exam_id: e.id,
                       code: String(f.get("code")).trim().toUpperCase(),
+                      acknowledge_policy: f.get("acknowledge_policy") === "on",
                     });
                   }}
                 >
@@ -406,6 +437,21 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                       disabled={busy}
                     />
                   </label>
+                  {e.focus_guard && (
+                    <label className="cbt-review">
+                      <input
+                        type="checkbox"
+                        name="acknowledge_policy"
+                        required
+                        disabled={busy}
+                      />{" "}
+                      Saya memahami: meninggalkan tab lebih dari dua detik atau
+                      keluar dari halaman asesmen dihitung satu pelanggaran.
+                      Pada pelanggaran ketiga, pengerjaan dihentikan sementara.
+                      Jawaban tersimpan, waktu tetap berjalan, dan saya harus
+                      meminta izin guru untuk melanjutkan.
+                    </label>
+                  )}
                   <button className="btn primary" disabled={busy}>
                     Mulai ujian
                   </button>

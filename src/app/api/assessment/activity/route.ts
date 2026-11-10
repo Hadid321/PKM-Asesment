@@ -4,7 +4,10 @@ import { activityInput } from "@/lib/assessment-support";
 import { ensure } from "@/lib/domain/errors";
 import { cbtRepository } from "@/lib/server/cbt/repository";
 import { repository } from "@/lib/server/repository";
-import { recordActivity } from "@/lib/server/assessment-support-store";
+import {
+  recordActivity,
+  readFocus,
+} from "@/lib/server/assessment-support-store";
 import { cbtEnabled } from "@/lib/server/config";
 export async function POST(request: Request) {
   try {
@@ -31,15 +34,29 @@ export async function POST(request: Request) {
         "Pengerjaan tidak ditemukan.",
         404,
       );
-      return (
-        s.status === "active" &&
-        e.status === "open" &&
-        Date.now() < Date.parse(s.deadline_at)
-      );
+      if (e.focus_guard)
+        ensure(
+          input.presence.page_id && input.presence.sequence,
+          "Catatan fokus belum lengkap. Muat ulang halaman.",
+          400,
+        );
+      return {
+        enabled: e.focus_guard === true,
+        active:
+          s.status === "active" &&
+          e.status === "open" &&
+          Date.now() < Date.parse(s.deadline_at),
+      };
     });
-    return json({
-      accepted: active ? await recordActivity(actor.id, input) : false,
-    });
+    const accepted = active.active
+      ? await recordActivity(actor.id, input, active.enabled)
+      : false;
+    const [focus] = await readFocus(
+      actor.id,
+      [input.sitting_id],
+      active.enabled ? [input.sitting_id] : [],
+    );
+    return json({ accepted, focus });
   } catch (e) {
     return apiError(e);
   }

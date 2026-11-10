@@ -49,11 +49,17 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      "supabase/migrations/20261110112854_assessment_focus_guard.sql",
+      "utf8",
+    ),
+  );
 }, 30000);
 afterAll(async () => db?.close());
 beforeEach(async () => {
   await db.exec(
-    "reset role; delete from private.assessment_events; delete from private.assessment_presence; delete from private.assessment_briefs; delete from private.cbt_sittings; delete from private.cbt_exams; delete from public.questions; update private.app_revision set revision=0 where id=1;",
+    "reset role; delete from private.assessment_focus_actions; delete from private.assessment_focus_controls; delete from private.assessment_events; delete from private.assessment_presence; delete from private.assessment_briefs; delete from private.cbt_sittings; delete from private.cbt_exams; delete from public.questions; update private.app_revision set revision=0 where id=1;",
   );
 });
 async function snapshot(actor: string) {
@@ -422,5 +428,317 @@ describe("Penyimpanan CBT privat", () => {
       outsider.state.sittings.every((s) => s.student_id === OTHER_STUDENT),
     ).toBe(true);
     await db.exec("reset role");
+  });
+});
+
+describe("Aturan fokus dan peringkat privat", () => {
+  async function guarded() {
+    await db.exec("set role service_role");
+    const t = createCbtService(repo(teacher.id), context, teacher),
+      u = createCbtService(repo(student.id), context, student);
+    await t.execute({
+      action: "publish",
+      reviewed: true,
+      focus_guard: true,
+      class_id: context.classes[0].id,
+      subject: "matematika",
+      title: "Asesmen fokus",
+      duration_minutes: 45,
+    });
+    const exam = (await snapshot(teacher.id)).state.exams[0];
+    await expect(
+      u.execute({ action: "start", exam_id: exam.id, code: exam.access_code }),
+    ).rejects.toThrow(/setujui/);
+    const { sitting_id: id } = await u.execute({
+      action: "start",
+      exam_id: exam.id,
+      code: exam.access_code,
+      acknowledge_policy: true,
+    });
+    const page = crypto.randomUUID();
+    let sequence = 0;
+    const send = (kinds: string[], visible = true) =>
+      db.query("select public.record_assessment_activity($1,$2,$3,$4)", [
+        student.id,
+        id,
+        JSON.stringify(
+          kinds.map((kind) => ({ id: crypto.randomUUID(), kind })),
+        ),
+        JSON.stringify({
+          visible,
+          focused: visible,
+          online: true,
+          fullscreen: false,
+          page_id: page,
+          sequence: ++sequence,
+        }),
+      ]);
+    const focus = async (actor = student.id) =>
+      (
+        await db.query<{
+          data: {
+            strikes: number;
+            locked: boolean;
+            version: number;
+            total_strikes: number;
+          }[];
+        }>("select public.read_assessment_focus($1,$2) as data", [actor, [id]])
+      ).rows[0].data;
+    await send(["opened"]);
+    return { t, u, exam, id: id!, send, focus };
+  }
+  it("tiga kejadian memblokir jawaban; izin guru mempertahankan riwayat", async () => {
+    const f = await guarded(),
+      view = await f.u.view(f.id),
+      q = view.questions[0];
+    await f.u.execute({
+      action: "save",
+      sitting_id: f.id,
+      item_id: q.id,
+      option: "A",
+      flagged: false,
+      expected_version: 0,
+    });
+    for (let i = 0; i < 3; i++) {
+      await f.send(["left_assessment"], false);
+      await f.send(["visible"]);
+    }
+    expect((await f.focus())[0]).toMatchObject({
+      strikes: 3,
+      total_strikes: 3,
+      locked: true,
+    });
+    expect(await f.focus(OTHER_TEACHER)).toEqual([]);
+    const save = {
+      action: "save",
+      sitting_id: f.id,
+      item_id: q.id,
+      option: "B",
+      flagged: false,
+      expected_version: 1,
+    };
+    await expect(f.u.execute(save)).rejects.toThrow(/ASSESSMENT_FOCUS_LOCKED/);
+    await expect(
+      f.u.execute({ action: "submit", sitting_id: f.id, expected_version: 1 }),
+    ).rejects.toThrow(/ASSESSMENT_FOCUS_LOCKED/);
+    // A forged end_reason cannot bypass the trigger.
+    const before = await snapshot(student.id),
+      forged = {
+        ...before.state.sittings[0],
+        status: "submitted",
+        submitted_at: new Date().toISOString(),
+        end_reason: "time",
+        version: 2,
+      };
+    await expect(
+      commit(student.id, before.revision, { exams: [], sittings: [forged] }),
+    ).rejects.toThrow();
+    const request = crypto.randomUUID(),
+      args = [teacher.id, f.id, request, "Perangkat diperiksa pengawas"];
+    await expect(
+      db.query("select public.resume_assessment_focus($1,$2,$3,$4)", [
+        OTHER_TEACHER,
+        ...args.slice(1),
+      ]),
+    ).rejects.toThrow(/forbidden/);
+    await db.query("select public.resume_assessment_focus($1,$2,$3,$4)", args);
+    await db.query("select public.resume_assessment_focus($1,$2,$3,$4)", args);
+    expect((await f.focus())[0]).toMatchObject({
+      strikes: 0,
+      total_strikes: 3,
+      locked: false,
+      version: 4,
+    });
+    await f.u.execute(save);
+    expect(
+      (await snapshot(student.id)).state.sittings[0].answers[q.id].option,
+    ).toBe("B");
+  });
+  it("ketidakhadiran perlu konfirmasi; catatan berulang tidak menambah pelanggaran", async () => {
+    const f = await guarded();
+    await f.send(["hidden"], false);
+    expect((await f.focus())[0].strikes).toBe(0);
+    await f.send(["visible"]);
+    await f.send(["hidden", "visible"]);
+    expect((await f.focus())[0].strikes).toBe(0);
+    await f.send(["hidden"], false);
+    await db.exec(
+      "reset role; update private.assessment_focus_controls set pending_since=clock_timestamp()-interval '3 seconds'; set role service_role;",
+    );
+    await f.send([], false);
+    await f.send(["left_assessment"], false);
+    expect((await f.focus())[0].strikes).toBe(1);
+    await f.send(["visible", "blur", "offline", "fullscreen_exit"]);
+    expect((await f.focus())[0].strikes).toBe(1);
+  });
+  it("penutupan mengumpulkan jawaban terkunci; peringkat menunggu rilis", async () => {
+    const f = await guarded();
+    const ranking = async (actor = student.id) =>
+      (
+        await db.query<{ data: unknown }>(
+          "select public.read_assessment_ranking($1,$2) as data",
+          [actor, f.exam.id],
+        )
+      ).rows[0].data;
+    expect(await ranking()).toBeNull();
+    for (let i = 0; i < 3; i++) {
+      await f.send(["left_assessment"], false);
+      await f.send(["visible"]);
+    }
+    await f.t.execute({ action: "close", exam_id: f.exam.id });
+    expect((await snapshot(student.id)).state.sittings[0].status).toBe(
+      "submitted",
+    );
+    await expect(
+      db.query("select public.resume_assessment_focus($1,$2,$3,$4)", [
+        teacher.id,
+        f.id,
+        crypto.randomUUID(),
+        "Perangkat sudah diperiksa",
+      ]),
+    ).rejects.toThrow(/no longer active/);
+    expect(await ranking()).toBeNull();
+    await f.t.execute({ action: "release", exam_id: f.exam.id });
+    expect(await ranking()).toEqual([
+      { rank: 1, label: "Anda", score: 0, correct: 0, total: 24, is_you: true },
+    ]);
+    expect(await ranking(OTHER_STUDENT)).toBeNull();
+  });
+  it("commit jawaban lama yang tiba setelah pelanggaran ketiga ditolak", async () => {
+    const f = await guarded(),
+      old = await snapshot(student.id),
+      changed = structuredClone(old.state.sittings[0]);
+    changed.answers[changed.order[0]] = { option: "A", flagged: false };
+    changed.version++;
+    for (let i = 0; i < 3; i++) {
+      await f.send(["left_assessment"], false);
+      await f.send(["visible"]);
+    }
+    await expect(
+      commit(student.id, old.revision, { exams: [], sittings: [changed] }),
+    ).rejects.toThrow(/ASSESSMENT_FOCUS_LOCKED/);
+    expect((await snapshot(student.id)).state.sittings[0].answers).toEqual({});
+  });
+  it("batas waktu nyata tetap mengumpulkan pengerjaan yang dihentikan", async () => {
+    const f = await guarded();
+    for (let i = 0; i < 3; i++) {
+      await f.send(["left_assessment"], false);
+      await f.send(["visible"]);
+    }
+    await db.query(
+      "update private.cbt_sittings set payload=jsonb_set(payload,'{deadline_at}',to_jsonb((clock_timestamp()-interval '1 second')::text)) where id=$1",
+      [f.id],
+    );
+    await expect(
+      db.query("select public.resume_assessment_focus($1,$2,$3,$4)", [
+        teacher.id,
+        f.id,
+        crypto.randomUUID(),
+        "Perangkat telah diperiksa",
+      ]),
+    ).rejects.toThrow(/no longer active/);
+    expect((await f.u.view(f.id)).status).toBe("submitted");
+  });
+  it("ranking SQL menghitung pilihan yang diacak dan seri tanpa identitas teman", async () => {
+    const f = await guarded(),
+      snapshot0 = await snapshot(student.id),
+      source = snapshot0.state.sittings[0],
+      all = [];
+    await db.exec("reset role");
+    for (let i = 0; i < 101; i++) {
+      const row = structuredClone(source);
+      row.id = i ? crypto.randomUUID() : source.id;
+      row.student_id = i ? crypto.randomUUID() : student.id;
+      if (i) {
+        await db.query("insert into public.profiles values($1,'student')", [
+          row.student_id,
+        ]);
+        await db.query("insert into public.class_members values($1,$2)", [
+          f.exam.class_id,
+          row.student_id,
+        ]);
+      }
+      row.started_at = new Date(
+        Date.parse(source.started_at) + i * 1000,
+      ).toISOString();
+      row.policy_acknowledged_at = row.started_at;
+      row.status = "submitted";
+      row.submitted_at = new Date().toISOString();
+      row.end_reason = "manual";
+      row.version = 1;
+      for (const id of row.order.slice(0, [4, 2, 2, 0][i] ?? 0)) {
+        const q = f.exam.items.find((q) => q.id === id)!;
+        row.answers[id] = {
+          option: (["A", "B", "C", "D"] as const)[
+            row.option_orders[id].indexOf(q.correct_option)
+          ],
+          flagged: false,
+        };
+      }
+      await db.query(
+        "insert into private.cbt_sittings values($1,$2,$3,$4) on conflict(id) do update set payload=excluded.payload",
+        [row.id, row.exam_id, row.student_id, JSON.stringify(row)],
+      );
+      all.push(row);
+    }
+    await db.exec("set role service_role");
+    await f.t.execute({ action: "close", exam_id: f.exam.id });
+    await f.t.execute({ action: "release", exam_id: f.exam.id });
+    const data = (
+      await db.query<{
+        data: { rank: number; correct: number; label: string }[];
+      }>("select public.read_assessment_ranking($1,$2) as data", [
+        student.id,
+        f.exam.id,
+      ])
+    ).rows[0].data;
+    expect(data.slice(0, 4).map((r) => r.rank)).toEqual([1, 2, 2, 4]);
+    expect(data).toHaveLength(101);
+    expect(new Set(data.map((r) => r.label)).size).toBe(101);
+    expect(data.some((r) => r.label === "Peserta 100")).toBe(true);
+    expect(data.slice(0, 4).map((r) => r.correct)).toEqual([4, 2, 2, 0]);
+    expect(data[0].label).toBe("Anda");
+    for (const row of all)
+      expect(JSON.stringify(data)).not.toContain(row.student_id);
+  });
+  it("RLS dan hak fungsi baru tetap tertutup bagi token browser", async () => {
+    const access = await db.query<{
+      name: string;
+      rls: boolean;
+      anon: boolean;
+      student: boolean;
+    }>(
+      "select c.relname as name,c.relrowsecurity as rls,has_table_privilege('anon',c.oid,'SELECT') as anon,has_table_privilege('authenticated',c.oid,'SELECT') as student from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relname in ('assessment_focus_controls','assessment_focus_actions')",
+    );
+    expect(access.rows).toHaveLength(2);
+    for (const row of access.rows)
+      expect(row).toMatchObject({ rls: true, anon: false, student: false });
+    for (const signature of [
+      "public.read_assessment_focus(uuid,uuid[])",
+      "public.resume_assessment_focus(uuid,uuid,uuid,text)",
+      "public.read_assessment_ranking(uuid,uuid)",
+    ]) {
+      const permissions = (
+        await db.query<{ anon: boolean; student: boolean; server: boolean }>(
+          "select has_function_privilege('anon',$1,'EXECUTE') as anon,has_function_privilege('authenticated',$1,'EXECUTE') as student,has_function_privilege('service_role',$1,'EXECUTE') as server",
+          [signature],
+        )
+      ).rows[0];
+      expect(permissions).toEqual({
+        anon: false,
+        student: false,
+        server: true,
+      });
+    }
+  });
+  it("kembali tanpa heartbeat tetap terhitung setelah grace server", async () => {
+    const f = await guarded();
+    await f.send(["hidden"], false);
+    await db.query(
+      "update private.assessment_focus_controls set pending_since=clock_timestamp()-interval '10 seconds' where sitting_id=$1",
+      [f.id],
+    );
+    await f.send(["visible"]);
+    expect((await f.focus())[0].strikes).toBe(1);
   });
 });

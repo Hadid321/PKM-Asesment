@@ -1,5 +1,6 @@
 type VersionedView = {
   version: number;
+  focus?: { version: number };
   status: "active" | "submitted";
   released: boolean;
   server_time: string;
@@ -8,6 +9,7 @@ export function shouldAcceptCbtView(
   current: VersionedView,
   next: VersionedView,
 ) {
+  if ((next.focus?.version ?? 0) < (current.focus?.version ?? 0)) return false;
   if (next.version < current.version) return false;
   if (current.status === "submitted" && next.status !== "submitted")
     return false;

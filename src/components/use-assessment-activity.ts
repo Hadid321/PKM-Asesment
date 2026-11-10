@@ -1,10 +1,25 @@
 "use client";
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
+import type { FocusState } from "@/lib/assessment-focus";
 import type { ActivityInput } from "@/lib/assessment-support";
-export function useAssessmentActivity(id: string, active: boolean) {
+export function useAssessmentActivity(
+  id: string,
+  active: boolean,
+  onFocusChanged?: (focus: FocusState) => void,
+) {
+  const lifecycle = useRef({ id, generation: 0 });
+  const focusChanged = useEffectEvent((focus: FocusState) =>
+    onFocusChanged?.(focus),
+  );
   const isStillActive = useEffectEvent(() => active);
   useEffect(() => {
     if (!active) return;
+    const generation = lifecycle.current.generation + 1;
+    lifecycle.current = { id, generation };
+    const pageId = crypto.randomUUID();
+    let sequence = 0,
+      lastFocusVersion = -1;
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
     const key = "adaptiva:activity:" + id;
     let events: ActivityInput["events"] = [],
       sending = false,
@@ -31,6 +46,8 @@ export function useAssessmentActivity(id: string, active: boolean) {
       sitting_id: id,
       events: events.slice(0, 20),
       presence: {
+        page_id: pageId,
+        sequence: ++sequence,
         visible: !document.hidden,
         focused: document.hasFocus(),
         online: navigator.onLine,
@@ -42,6 +59,7 @@ export function useAssessmentActivity(id: string, active: boolean) {
       sending = true;
       const body = payload();
       request = new AbortController();
+      let success = false;
       try {
         const r = await fetch("/api/assessment/activity", {
           method: "POST",
@@ -52,6 +70,17 @@ export function useAssessmentActivity(id: string, active: boolean) {
         });
         if (!r.ok) return;
         const data = await r.json();
+        success = true;
+        if (!document.hidden) {
+          clearTimeout(graceTimer);
+        } else if (body.events.some((e) => e.kind === "hidden")) {
+          clearTimeout(graceTimer);
+          graceTimer = setTimeout(() => void flush(), 2100);
+        }
+        if (data.focus && data.focus.version !== lastFocusVersion) {
+          lastFocusVersion = data.focus.version;
+          focusChanged(data.focus);
+        }
         const ids = new Set(body.events.map((e) => e.id));
         events = events.filter((e) => !ids.has(e.id));
         persist();
@@ -60,6 +89,8 @@ export function useAssessmentActivity(id: string, active: boolean) {
         /* Retry the same event IDs on the next signal or heartbeat. */
       } finally {
         sending = false;
+        if (success && events.length && !stopped)
+          queueMicrotask(() => void flush());
       }
     }
     function record(kind: ActivityInput["events"][number]["kind"]) {
@@ -74,6 +105,8 @@ export function useAssessmentActivity(id: string, active: boolean) {
       if (visible !== lastVisible) {
         lastVisible = visible;
         record(visible ? "visible" : "hidden");
+        clearTimeout(graceTimer);
+        if (!visible) graceTimer = setTimeout(() => void flush(), 2100);
       }
     }
     const blur = () => record("blur"),
@@ -105,18 +138,26 @@ export function useAssessmentActivity(id: string, active: boolean) {
     const timer = setInterval(() => void flush(), 20000);
     return () => {
       request?.abort();
-      if (!stopped && isStillActive()) {
-        events.push({ id: crypto.randomUUID(), kind: "left_assessment" });
-        events = events.slice(-100);
-        persist();
-        const body = payload();
-        body.presence.visible = false;
-        body.presence.focused = false;
-        navigator.sendBeacon(
-          "/api/assessment/activity",
-          new Blob([JSON.stringify(body)], { type: "application/json" }),
-        );
-      }
+      clearTimeout(graceTimer);
+      queueMicrotask(() => {
+        if (
+          lifecycle.current.id === id &&
+          lifecycle.current.generation !== generation
+        )
+          return;
+        if (isStillActive()) {
+          events.push({ id: crypto.randomUUID(), kind: "left_assessment" });
+          events = events.slice(-100);
+          persist();
+          const body = payload();
+          body.presence.visible = false;
+          body.presence.focused = false;
+          navigator.sendBeacon(
+            "/api/assessment/activity",
+            new Blob([JSON.stringify(body)], { type: "application/json" }),
+          );
+        }
+      }); // React Strict Mode replays effects without leaving the page.
       stopped = true;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", visibility);

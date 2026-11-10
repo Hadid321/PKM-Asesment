@@ -1,56 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createCbtService, grade } from "@/lib/server/cbt/engine";
+import { grade } from "@/lib/server/cbt/engine";
 import { examItems } from "@/lib/server/cbt/content";
 import { prepareExamItems, questionFingerprint } from "@/lib/server/cbt/bank";
-import {
-  cbtStateSchema,
-  type CbtRepository,
-  type CbtState,
-} from "@/lib/cbt/model";
-import {
-  demoState,
-  DEMO_STUDENT,
-  DEMO_TEACHER,
-  OTHER_TEACHER,
-} from "@/lib/demo/seed";
-import { curriculumTopics } from "@/lib/curriculum/catalog";
+import { OTHER_TEACHER } from "@/lib/demo/seed";
+
 import { CURRICULUM_QUESTIONS } from "@/lib/server/curriculum-content";
-import type { Profile } from "@/lib/types";
-export function cbtLab() {
-  const context = demoState();
-  context.topics.push(...curriculumTopics());
-  const teacher = context.profiles.find((p) => p.id === DEMO_TEACHER)!;
-  const student = context.profiles.find((p) => p.id === DEMO_STUDENT)!;
-  let clock = Date.now();
-  let state: CbtState = { exams: [], sittings: [] };
-  let queue: Promise<unknown> = Promise.resolve();
-  const repo: CbtRepository = {
-    transact: async (fn) => {
-      const task = queue.then(() => {
-        const draft = structuredClone(state);
-        const r = fn(draft);
-        cbtStateSchema.parse(draft);
-        state = draft;
-        return r;
-      });
-      queue = task.catch(() => undefined);
-      return task;
-    },
-  };
-  const service = (actor: Profile) =>
-    createCbtService(repo, context, actor, () => clock);
-  return {
-    context,
-    teacher,
-    student,
-    repo,
-    service,
-    state: () => structuredClone(state),
-    advance: (ms: number) => {
-      clock += ms;
-    },
-  };
-}
+import { cbtLab } from "./cbt-fixture";
 async function started() {
   const lab = cbtLab();
   const published = await lab.service(lab.teacher).execute({

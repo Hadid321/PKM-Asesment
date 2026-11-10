@@ -1,7 +1,11 @@
 import "server-only";
+import { grade } from "./grading";
+export { grade } from "./grading";
+import { assessmentRanking } from "./ranking";
+import { focusView, FOCUS_RULES } from "../../assessment-focus";
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { ensure } from "../../domain/errors";
-import { BKT, updateBkt } from "../../domain/bkt";
+import { BKT } from "../../domain/bkt";
 import {
   cbtInput,
   keys,
@@ -21,53 +25,6 @@ function shuffle<T>(values: readonly T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
-}
-export function grade(exam: Exam, sitting: Sitting) {
-  const mastery = { ...sitting.priors };
-  let correct = 0;
-  const review = sitting.order.map((id) => {
-    const item = exam.items.find((q) => q.id === id)!;
-    const selected = sitting.answers[id]?.option ?? null;
-    const order = sitting.option_orders[id];
-    const original = selected ? order[keys.indexOf(selected)] : null;
-    const right = original === item.correct_option;
-    if (right) correct++;
-    if (original)
-      mastery[item.topic_id] = updateBkt(
-        mastery[item.topic_id] ?? BKT.initial,
-        right,
-      );
-    return {
-      id,
-      question_text: item.question_text,
-      options: Object.fromEntries(
-        keys.map((k, i) => [k, item.options[order[i]]]),
-      ),
-      selected_option: selected,
-      correct_option: keys[order.indexOf(item.correct_option)],
-      is_correct: right,
-      explanation: item.explanation,
-    };
-  });
-  const topics = [
-    ...new Map(
-      exam.items.map((q) => [
-        q.topic_id,
-        {
-          id: q.topic_id,
-          name: q.topic_name,
-          p_l: mastery[q.topic_id] ?? BKT.initial,
-        },
-      ]),
-    ).values(),
-  ].sort((a, b) => a.p_l - b.p_l);
-  return {
-    correct,
-    total: exam.items.length,
-    score: Math.round((correct / exam.items.length) * 100),
-    topics,
-    review,
-  };
 }
 function isMember(context: State, actor: Profile, classId: string) {
   return context.class_members.some(
@@ -117,7 +74,14 @@ function own(state: CbtState, context: State, actor: Profile, id: string) {
   );
   return { sitting, exam };
 }
-function studentView(exam: Exam, s: Sitting, clock: number) {
+function studentView(
+  exam: Exam,
+  s: Sitting,
+  clock: number,
+  context: State,
+  actor: Profile,
+  sittings: Sitting[],
+) {
   return {
     id: s.id,
     exam_id: exam.id,
@@ -131,6 +95,8 @@ function studentView(exam: Exam, s: Sitting, clock: number) {
     released: exam.released,
     answered: Object.values(s.answers).filter((a) => a.option !== null).length,
     total: 24,
+    focus: focusView(exam.focus_guard === true),
+    ranking: assessmentRanking(exam, sittings, actor, context),
     questions:
       s.status === "active"
         ? s.order.map((id) => {
@@ -187,6 +153,8 @@ export function createCbtService(
                   "Kelas ujian",
                 duration_minutes: e.duration_minutes,
                 count: 24,
+                focus_guard: e.focus_guard === true,
+                ranking: assessmentRanking(e, state.sittings, actor, context),
                 status: e.status,
                 released: e.released,
                 access_code:
@@ -217,7 +185,7 @@ export function createCbtService(
         const now = clock();
         expire(state, now);
         const { exam, sitting } = own(state, context, actor, id);
-        return studentView(exam, sitting, now);
+        return studentView(exam, sitting, now, context, actor, state.sittings);
       }),
     execute: (raw: unknown) =>
       repo.transact((state) => {
@@ -283,6 +251,9 @@ export function createCbtService(
             closed_at: null,
             items,
             fingerprints,
+            ...(input.focus_guard
+              ? { focus_guard: true, focus_rules: { ...FOCUS_RULES } }
+              : {}),
           };
           state.exams.push(exam);
           return {
@@ -319,7 +290,15 @@ export function createCbtService(
             "Selesaikan ujian yang sedang berlangsung terlebih dahulu.",
             409,
           );
+          ensure(
+            !exam.focus_guard || input.acknowledge_policy === true,
+            "Baca dan setujui aturan fokus sebelum memulai.",
+            400,
+          );
           const sitting: Sitting = {
+            ...(exam.focus_guard
+              ? { policy_acknowledged_at: new Date(now).toISOString() }
+              : {}),
             id: randomUUID(),
             exam_id: exam.id,
             student_id: actor.id,
@@ -358,7 +337,14 @@ export function createCbtService(
           // Expiration is persisted even when an autosave arrives too late.
           if (sitting.status !== "active")
             return {
-              view: studentView(exam, sitting, now),
+              view: studentView(
+                exam,
+                sitting,
+                now,
+                context,
+                actor,
+                state.sittings,
+              ),
               message: "Pengerjaan sudah dikumpulkan.",
             };
           ensure(
@@ -383,7 +369,14 @@ export function createCbtService(
           }
           sitting.version++;
           return {
-            view: studentView(exam, sitting, now),
+            view: studentView(
+              exam,
+              sitting,
+              now,
+              context,
+              actor,
+              state.sittings,
+            ),
             message:
               input.action === "save"
                 ? "Jawaban tersimpan."
