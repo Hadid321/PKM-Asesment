@@ -42,18 +42,28 @@ export function AssessmentBrief({
       className="assessment-brief"
       aria-label="Pendamping belajar Adaptiva"
     >
-      <h2>{teacher ? "Tindak lanjut kelas" : "Langkah belajar berikutnya"}</h2>
+      <p className="eyebrow">PENDAMPING AI</p>
+      <h2>Asisten belajar Adaptiva</h2>
       <p>
-        Susun {teacher ? "arah pendampingan kelas" : "rencana belajar"}{" "}
-        berdasarkan hasil dan prioritas topik asesmen ini.
+        {teacher
+          ? "Temukan materi yang perlu dibahas ulang dan susun langkah pendampingan kelas dari hasil asesmen."
+          : "Pahami materi yang perlu kamu kuatkan dan susun langkah belajar yang bisa langsung kamu lakukan."}
+      </p>
+      <p className="small muted">
+        Saran disusun dari hasil dan prioritas materi. AI tidak mengubah nilai
+        atau menentukan pelanggaran.
       </p>
       {!data && (
         <button
-          className="btn secondary"
+          className="btn primary"
           disabled={busy}
           onClick={() => void generate()}
         >
-          {busy ? "Menyiapkan tindak lanjut…" : "Susun tindak lanjut"}
+          {busy
+            ? "Menyiapkan rencana…"
+            : teacher
+              ? "Susun arahan kelas"
+              : "Buat rencana belajarku"}
         </button>
       )}
       {error && (
@@ -66,7 +76,7 @@ export function AssessmentBrief({
           <p className="eyebrow">
             {data.source === "groq"
               ? "RINGKASAN BERBANTUAN AI"
-              : "PANDUAN BELAJAR"}
+              : "PANDUAN TERSTRUKTUR · AI TIDAK TERSEDIA"}
           </p>
           <p>{data.brief.overview}</p>
           {data.brief.actions.map((a) => (

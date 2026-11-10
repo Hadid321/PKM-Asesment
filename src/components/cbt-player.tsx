@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { AssessmentConfirm } from "./assessment-confirm";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CbtView } from "@/lib/server/cbt/engine";
 import type { Option } from "@/lib/types";
@@ -25,6 +26,7 @@ async function postExam<T>(body: unknown): Promise<T> {
 const keys = ["A", "B", "C", "D"] as const;
 type Pending = { id: string; option: Option | null; flagged: boolean };
 export function CbtPlayer({ initial }: { initial: CbtView }) {
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [data, setData] = useState(initial);
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -171,12 +173,6 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
   }
   async function submit() {
     if (pending || busy) return;
-    if (
-      !window.confirm(
-        `Kumpulkan ujian? ${data.answered} dari 24 soal sudah dijawab. Setelah dikumpulkan, jawaban tidak dapat diubah.`,
-      )
-    )
-      return;
     setBusy(true);
     setError("");
     try {
@@ -186,6 +182,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
         expected_version: latest.current.version,
       });
       applyView(r.view);
+      setConfirmSubmit(false);
     } catch (e) {
       if ((e as Error & { status?: number }).status === 409)
         await refresh(true);
@@ -210,6 +207,7 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
                 {data.result.correct} dari {data.result.total} jawaban benar.
                 Hasil dan pembahasan sudah dibuka oleh guru.
               </p>
+              <AssessmentBrief targetId={data.id} />
               <h3>Perkiraan pemahaman pada ujian</h3>
               {data.result.topics.map((t) => (
                 <p key={t.id}>
@@ -222,7 +220,6 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
                 bukan sertifikasi penguasaan.
               </p>
               <AssessmentRanking rows={data.ranking} />
-              <AssessmentBrief targetId={data.id} />
             </>
           ) : (
             <p className="notice">
@@ -455,7 +452,10 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
           <button
             className="btn primary"
             disabled={busy || pending !== null}
-            onClick={() => void submit()}
+            onClick={() => {
+              setError("");
+              setConfirmSubmit(true);
+            }}
           >
             Kumpulkan ujian
           </button>
@@ -480,6 +480,21 @@ export function CbtPlayer({ initial }: { initial: CbtView }) {
           </p>
         </Card>
       </div>
+      <AssessmentConfirm
+        open={confirmSubmit}
+        title="Kumpulkan jawaban sekarang?"
+        description={
+          data.answered +
+          " dari " +
+          data.total +
+          " soal sudah dijawab. Setelah dikumpulkan, jawaban tidak dapat diubah. Nilai dan pembahasan akan tersedia setelah guru merilis hasil."
+        }
+        confirmLabel="Ya, kumpulkan jawaban"
+        busy={busy}
+        error={error}
+        onCancel={() => setConfirmSubmit(false)}
+        onConfirm={() => void submit()}
+      />
     </div>
   );
 }

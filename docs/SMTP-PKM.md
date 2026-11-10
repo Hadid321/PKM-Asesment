@@ -23,3 +23,18 @@ Alternatif Resend Free membatasi 100 email per hari, sehingga lebih dari 100 pes
 - [Custom SMTP Supabase](https://supabase.com/docs/guides/auth/auth-smtp)
 - [Batas Auth Supabase](https://supabase.com/docs/guides/auth/rate-limits)
 - [Paket Resend](https://resend.com/pricing)
+
+
+## Cadangan pengiriman email untuk hari H
+
+Custom SMTP mengganti jalur pengiriman email, bukan mengganti Supabase Auth. Kuota email, pembatasan login/pendaftaran, kapasitas database, dan gangguan layanan Auth adalah hal berbeda. Jika Auth menolak karena batas endpoint atau sedang terganggu, SMTP cadangan tidak mengatasi penolakan tersebut.
+
+- Utama: Brevo Free (300 email/hari).
+- Cadangan: SMTP2GO Free (200 email/hari, 1.000 email/bulan). Verifikasi domain pengirim lebih dahulu; tanpa verifikasi domain, batas 25 email/jam berlaku.
+- Siapkan kedua akun dan DNS pengirim sebelum kegiatan. Gunakan identitas Adaptiva pada domain yang telah diverifikasi.
+- Pada konfigurasi SMTP standar proyek, pergantian penyedia dilakukan pengelola secara manual. Belum ada failover otomatis di aplikasi ini.
+- Saat email terlambat, periksa log Auth dan log penyedia dahulu. Hindari klik kirim ulang bertubi-tubi. Jika masalah ada pada penyedia pengirim, pindahkan konfigurasi SMTP ke akun cadangan, uji satu email, lalu arahkan peserta mengirim ulang seperlunya.
+- Jika masalahnya pembatasan Auth, ikuti batas proyek dan jadwalkan pendaftaran bertahap. Jangan menonaktifkan konfirmasi atau membangun login alternatif mendadak.
+- Siapkan dan konfirmasikan akun peserta sebelum hari H agar kegiatan tidak bergantung pada pengiriman email serentak.
+
+Sumber resmi tambahan: [SMTP2GO Free Plan](https://support.smtp2go.com/hc/en-gb/articles/223087947-Free-Plan), [Custom SMTP Supabase](https://supabase.com/docs/guides/auth/auth-smtp).

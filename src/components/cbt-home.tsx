@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { AssessmentConfirm } from "./assessment-confirm";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AssessmentRanking } from "./assessment-ranking";
@@ -13,6 +14,11 @@ import type { ExamItem } from "@/lib/cbt/model";
 import type { CbtList } from "@/lib/server/cbt/engine";
 export function CbtHome({ initial }: { initial: CbtList }) {
   const router = useRouter();
+  const [confirmation, setConfirmation] = useState<{
+    action: "close" | "release";
+    exam_id: string;
+    title: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -21,12 +27,12 @@ export function CbtHome({ initial }: { initial: CbtList }) {
   const [preview, setPreview] = useState<ExamItem[] | null>(null);
   const [customCsv, setCustomCsv] = useState("");
   useEffect(() => {
-    if (!teacher) return;
     const timer = setInterval(() => {
-      if (!busy && document.visibilityState === "visible") router.refresh();
+      if (!busy && !confirmation && document.visibilityState === "visible")
+        router.refresh();
     }, 15000);
     return () => clearInterval(timer);
-  }, [teacher, busy, router]);
+  }, [busy, confirmation, router]);
   async function showPreview() {
     setBusy(true);
     setError("");
@@ -65,8 +71,10 @@ export function CbtHome({ initial }: { initial: CbtList }) {
         setMessage(r.message ?? "Tersimpan.");
         router.refresh();
       }
+      return true;
     } catch (e) {
       setError((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -106,14 +114,22 @@ export function CbtHome({ initial }: { initial: CbtList }) {
           </p>
         )}
       </Card>
-      <button
-        type="button"
-        className="btn secondary"
-        disabled={busy}
-        onClick={() => router.refresh()}
-      >
-        Perbarui status pengerjaan
-      </button>
+      {teacher && (
+        <button
+          type="button"
+          className="btn secondary"
+          disabled={busy}
+          onClick={() => router.refresh()}
+        >
+          Perbarui status pengerjaan
+        </button>
+      )}
+      {!teacher && (
+        <p className="small muted">
+          Daftar asesmen diperbarui otomatis. Setelah hasil dirilis, buka hasil
+          untuk mendapatkan rencana belajar dari Asisten Adaptiva.
+        </p>
+      )}
       {teacher && (
         <Card className="mt">
           <h2>Buka ujian baru</h2>
@@ -320,12 +336,12 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                         className="btn secondary"
                         disabled={busy}
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              "Tutup ujian sekarang? Semua pengerjaan aktif akan dikumpulkan dengan jawaban yang sudah tersimpan.",
-                            )
-                          )
-                            void run({ action: "close", exam_id: e.id });
+                          setError("");
+                          setConfirmation({
+                            action: "close",
+                            exam_id: e.id,
+                            title: e.title,
+                          });
                         }}
                       >
                         Akhiri ujian
@@ -335,12 +351,12 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                         className="btn primary"
                         disabled={busy}
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              "Rilis nilai dan kunci pembahasan kepada semua peserta ujian ini?",
-                            )
-                          )
-                            void run({ action: "release", exam_id: e.id });
+                          setError("");
+                          setConfirmation({
+                            action: "release",
+                            exam_id: e.id,
+                            title: e.title,
+                          });
                         }}
                       >
                         Rilis hasil dan pembahasan
@@ -349,6 +365,9 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                       <p>Hasil sudah dirilis.</p>
                     )}
                   </div>
+                  {e.status === "closed" && !!e.participants?.length && (
+                    <AssessmentBrief targetId={e.id} teacher />
+                  )}
                   <div className="table-wrap">
                     <table>
                       <caption className="sr-only">
@@ -396,9 +415,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                       </tbody>
                     </table>
                   </div>
-                  {e.status === "closed" && !!e.participants?.length && (
-                    <AssessmentBrief targetId={e.id} teacher />
-                  )}
+
                   {!e.participants?.length && (
                     <p>Belum ada peserta yang memulai.</p>
                   )}
@@ -408,7 +425,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                   {e.sitting.status === "active"
                     ? "Lanjutkan ujian"
                     : e.released
-                      ? "Lihat hasil"
+                      ? "Lihat hasil & asisten belajar"
                       : "Lihat status pengumpulan"}
                 </Link>
               ) : e.status === "open" ? (
@@ -477,6 +494,40 @@ export function CbtHome({ initial }: { initial: CbtList }) {
           </Card>
         )}
       </div>
+      <AssessmentConfirm
+        open={confirmation !== null}
+        title={
+          confirmation?.action === "close"
+            ? "Akhiri asesmen ini?"
+            : "Rilis hasil kepada siswa?"
+        }
+        description={
+          confirmation?.action === "close"
+            ? 'Asesmen "' +
+              confirmation.title +
+              '" akan ditutup. Semua pengerjaan aktif dikumpulkan memakai jawaban yang sudah tersimpan. Siswa tidak dapat melanjutkan, dan hasil tetap menunggu Anda rilis.'
+            : 'Nilai, peringkat, kunci, pembahasan, dan Asisten Adaptiva untuk asesmen "' +
+              (confirmation?.title ?? "") +
+              '" akan tersedia bagi peserta. Hasil yang sudah dirilis tidak dapat ditarik kembali.'
+        }
+        confirmLabel={
+          confirmation?.action === "close"
+            ? "Ya, akhiri asesmen"
+            : "Ya, rilis hasil"
+        }
+        busy={busy}
+        error={error}
+        onCancel={() => setConfirmation(null)}
+        onConfirm={() => {
+          if (confirmation)
+            void run({
+              action: confirmation.action,
+              exam_id: confirmation.exam_id,
+            }).then((ok) => {
+              if (ok) setConfirmation(null);
+            });
+        }}
+      />
     </>
   );
 }
