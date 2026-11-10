@@ -14,6 +14,7 @@
 ## Pengujian Chrome lanjutan
 
 Pada sesi lanjutan setelah pengguna membuka demo di Chrome, alur nyata berhasil diperiksa:
+
 - Guru membuka asesmen Bahasa Indonesia dengan aturan fokus aktif.
 - Siswa menyetujui aturan dan menyimpan satu jawaban.
 - Berpindah ke tab lain selama lebih dari tiga detik lalu kembali menghasilkan peringatan 1/3 dan 2/3.
@@ -21,7 +22,20 @@ Pada sesi lanjutan setelah pengguna membuka demo di Chrome, alur nyata berhasil 
 - Layar penghentian terbaca pada tema gelap dan terang. Bukti lokal tersimpan di focus-20261110/chrome-third-strike.png.
 - Berdasarkan tampilan Chrome, posisi checkbox persetujuan dan ragu-ragu dirapikan menjadi sejajar dengan teks; perubahan CSS ditinjau independen dan build diperiksa kembali.
 
-Pemeriksaan izin otomatis kembali menghentikan Computer Use pada perpindahan ke halaman masuk guru karena URL tidak dapat dipastikan. Tidak ada input browser setelah penghentian. Klik izin lanjut guru dan kontrol baru pada viewport ponsel belum diverifikasi melalui browser; alur izin, penyimpanan alasan, reset hitungan, deadline, dan rilis peringkat telah lulus API/database.
+## Verifikasi izin guru dan layar ponsel
+
+Pada sesi pengujian berikutnya, dua pemeriksaan yang sebelumnya tertunda berhasil:
+
+- Guru di Chrome melihat status Dihentikan sementara, jawaban 1/24, pelanggaran saat ini 3/3 dan total riwayat tiga.
+- Guru mengisi alasan pemeriksaan pengawas lalu menekan Beri izin lanjut. Status berubah menjadi Mengerjakan, pelanggaran saat ini 0/3 dan total riwayat tetap tiga. Form izin tidak lagi ditampilkan setelah berhasil.
+- Siswa membuka Lanjutkan ujian pada viewport 390 × 844. Soal dan jawaban D sebelumnya tetap tampil; waktu tersisa terus berkurang dan tidak kembali ke 45 menit.
+- Tanda ragu-ragu berhasil diaktifkan dan tersimpan. Label checkbox sejajar dengan teks setelah perbaikan CSS.
+- Pengujian memakai preferensi teks besar. Lebar dokumen 375 piksel pada viewport 390 piksel, sehingga tidak ada luapan horizontal halaman.
+- Peringkat dengan identitas Anda tersedia pada daftar hasil yang sudah dirilis; perhitungan, privasi, dan syarat rilis telah diuji melalui API/database.
+
+Bukti lokal: focus-20261110/chrome-teacher-resumed.png dan focus-20261110/mobile-resumed-controls.png.
+
+Sesi browser kemudian dihentikan oleh pemeriksaan izin otomatis saat konfirmasi penutupan ujian demo muncul, karena URL Chrome tidak dapat dipastikan. Tidak ada input browser setelah penghentian. Klik konfirmasi penutupan dan rilis untuk sesi ini belum selesai melalui UI; alurnya sudah lulus pengujian API/database.
 
 ## Sebelum aktivasi
 
@@ -30,6 +44,6 @@ Pemeriksaan izin otomatis kembali menghentikan Computer Use pada perpindahan ke 
 3. Di Chrome, tinggalkan tab selama lebih dari dua detik lalu kembali; ulangi tiga kali. Periksa peringatan 1/3 dan 2/3, lalu penghentian 3/3, jawaban tetap tersimpan, waktu tidak diulang.
 4. Guru memasukkan alasan dan memberi izin lanjut. Siswa dapat melanjutkan, total riwayat tetap tiga dan deadline tetap sama.
 5. Kumpulkan, tutup dan rilis hasil; siswa melihat peringkat dengan pseudonim. Periksa juga tema gelap/terang dan layar ponsel.
-6. Source dapat di-push ke main sesuai instruksi pengguna. Sebelum aktivasi production, lengkapi cek UI izin guru/mobile lalu minta persetujuan migration dan deployment. Migration baru menambah kontrol fokus dan audit izin; tidak menghapus data atau mengubah nilai latihan/BKT.
+6. Source sudah di-push ke main sesuai instruksi pengguna. UI izin guru dan kontrol ponsel sudah diuji. Sebelum aktivasi production, minta persetujuan migration dan deployment; batas verifikasi dialog penutupan dicatat di atas. Migration baru menambah kontrol fokus dan audit izin; tidak menghapus data atau mengubah nilai latihan/BKT.
 
 Belum ada migration atau deployment production untuk fitur baru ini. AI dan pencatatan aktivitas pada release sebelumnya tetap berlaku.
