@@ -140,7 +140,7 @@ export function createCbtService(
                   .map((c) => ({ id: c.id, name: c.name }))
               : [],
           exams: state.exams
-            .filter((e) => visible(e, context, actor))
+            .filter((e) => !e.archived_at && visible(e, context, actor))
             .map((e) => {
               const sittings = state.sittings.filter((s) => s.exam_id === e.id);
               const mine = sittings.find((s) => s.student_id === actor.id);

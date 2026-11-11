@@ -26,6 +26,30 @@ async function started() {
   return { ...lab, exam, studentService: student, id: start.sitting_id! };
 }
 describe("CBT: rahasia, waktu, identitas, dan idempotensi", () => {
+  it("arsip menyembunyikan data uji tanpa menghapus hasil atau mengizinkan pemakaian ulang soal", async () => {
+    const l = await started();
+    const teacher = l.service(l.teacher);
+    await teacher.execute({ action: "close", exam_id: l.exam.id });
+    await teacher.execute({ action: "release", exam_id: l.exam.id });
+    await l.repo.transact((state) => {
+      state.exams[0].archived_at = new Date().toISOString();
+    });
+    expect((await teacher.list()).exams).toHaveLength(0);
+    expect((await l.studentService.list()).exams).toHaveLength(0);
+    expect((await l.studentService.view(l.id)).result).not.toBeNull();
+    expect(l.state().exams).toHaveLength(1);
+    expect(l.state().sittings).toHaveLength(1);
+    await expect(
+      teacher.execute({
+        action: "publish",
+        reviewed: true,
+        class_id: l.context.classes[0].id,
+        subject: "bahasa-inggris",
+        title: "Paket yang pernah dirilis",
+        duration_minutes: 45,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+  });
   it("CSV privat valid dapat ditinjau, tetapi salah mapel, duplikat dan soal latihan ditolak", () => {
     const l = cbtLab();
     const items = examItems("matematika", l.context.topics);

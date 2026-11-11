@@ -1,4 +1,44 @@
-<h2>Konfirmasi akun Adaptiva</h2>
-<p>Satu langkah lagi untuk mulai belajar bersama kelas Anda.</p>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email">Konfirmasi alamat email</a></p>
-<p>Jika Anda tidak mendaftar, abaikan email ini.</p>
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Konfirmasi akun Adaptiva</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f3f5f7;color:#17212b;font-family:Arial,Helvetica,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">Konfirmasi alamat email Anda untuk mulai menggunakan Adaptiva bersama kelas Anda.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f5f7;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border:1px solid #dce2e7;border-radius:16px;">
+            <tr>
+              <td style="padding:30px 28px 22px;border-bottom:1px solid #e5e9ed;">
+                <p style="margin:0;font-size:26px;line-height:34px;font-weight:700;letter-spacing:-1px;">Adaptiva<span style="color:#0f766e;">.</span></p>
+                <p style="margin:6px 0 0;color:#52616e;font-size:14px;line-height:22px;">Asesmen dan pendamping belajar<br />SMAN 1 Parung Panjang</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                <h1 style="margin:0 0 16px;font-size:27px;line-height:36px;letter-spacing:-0.5px;">Selamat datang di Adaptiva</h1>
+                <p style="margin:0 0 16px;font-size:17px;line-height:27px;">Terima kasih sudah mendaftar. Konfirmasi alamat email Anda untuk mengaktifkan akun dan mulai belajar bersama kelas Anda.</p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+                  <tr><td bgcolor="#0f766e" style="border-radius:8px;"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email" style="display:inline-block;padding:16px 22px;color:#ffffff;font-size:17px;line-height:24px;font-weight:700;text-decoration:none;">Konfirmasi alamat email</a></td></tr>
+                </table>
+                <p style="margin:0 0 18px;font-size:16px;line-height:26px;">Setelah email dikonfirmasi, Anda dapat masuk ke Adaptiva dan bergabung ke kelas menggunakan kode dari guru atau panitia.</p>
+                <p style="margin:0;padding:16px;background-color:#f3f7f7;border-left:3px solid #0f766e;font-size:15px;line-height:24px;">Tautan ini bersifat pribadi. Jangan bagikan kepada siapa pun. Jika tautan kedaluwarsa, periksa email konfirmasi terbaru atau hubungi guru maupun panitia.</p>
+                <p style="margin:24px 0 8px;color:#52616e;font-size:14px;line-height:22px;">Tombol tidak berfungsi? Salin tautan berikut ke browser Anda:</p>
+                <p style="margin:0;font-size:14px;line-height:22px;overflow-wrap:anywhere;word-break:break-all;"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email" style="color:#0f766e;text-decoration:underline;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 28px;border-top:1px solid #e5e9ed;">
+                <p style="margin:0;color:#52616e;font-size:14px;line-height:23px;">Jika Anda tidak merasa mendaftar, abaikan email ini. Jangan berikan kata sandi atau tautan konfirmasi kepada pihak lain.</p>
+                <p style="margin:14px 0 0;color:#52616e;font-size:14px;line-height:23px;">Adaptiva &middot; Program Pengabdian kepada Masyarakat<br />Mitra SMAN 1 Parung Panjang</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

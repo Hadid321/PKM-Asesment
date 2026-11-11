@@ -28,6 +28,7 @@ export const examSchema = z.object({
   access_code: z.string().min(6).max(20),
   status: z.enum(["open", "closed"]),
   released: z.boolean(),
+  archived_at: z.iso.datetime().optional(),
   created_at: z.iso.datetime(),
   closed_at: z.iso.datetime().nullable(),
   focus_guard: z.boolean().optional(),
