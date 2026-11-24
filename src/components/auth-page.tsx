@@ -99,8 +99,8 @@ export function AuthPage({
               <p>Pratinjau menggunakan data simulasi di komputer ini.</p>
             ) : (
               <p>
-                <strong>Untuk guru</strong>Akun disiapkan oleh pengelola
-                sekolah. Gunakan halaman masuk setelah menerima akun.
+                <strong>Untuk guru</strong> Sudah menerima undangan sekolah?{" "}
+                <Link href="/registrasi/guru">Daftar atau aktifkan akun guru</Link>.
               </p>
             )}
           </div>

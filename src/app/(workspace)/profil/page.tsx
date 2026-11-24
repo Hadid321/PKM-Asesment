@@ -1,9 +1,12 @@
+import Link from "next/link";
+import { isSchoolAdmin } from "@/lib/server/teacher-access";
 import { pageData } from "@/lib/server/page-data";
 import { mode } from "@/lib/server/config";
 import { Badge, Card, PageTitle } from "@/components/ui";
 import { SimpleForm } from "@/components/actions";
 export default async function Profile() {
   const data = await pageData();
+  const admin = await isSchoolAdmin(data.actor.id);
   return (
     <>
       <PageTitle
@@ -30,6 +33,8 @@ export default async function Profile() {
           untuk penghapusan atau koreksi data uji coba.
         </p>
       </Card>
+      {mode() === "supabase" && data.actor.role === "student" && <Card className="narrow-card"><h2>Akun guru</h2><p className="muted">Memiliki kode undangan sekolah?</p><Link className="btn secondary" href="/aktivasi-guru">Aktifkan akun guru</Link></Card>}
+      {admin && <Card className="narrow-card"><h2>Administrasi sekolah</h2><Link className="btn secondary" href="/admin">Kelola undangan guru</Link></Card>}
     </>
   );
 }
