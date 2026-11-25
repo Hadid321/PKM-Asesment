@@ -2964,3 +2964,17 @@ textarea {
   .teacher-access-revoke, .teacher-access-revoke .btn { width: 100%; }
   .teacher-access-footer .btn { width: 100%; }
 }
+
+/* Dashboard assessment cards share the same vertical rhythm as the bank panel. */
+.dashboard-assessment-card {
+  margin-bottom: 24px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.dashboard-assessment-card > :is(h2, p) { margin: 0; }
+.dashboard-assessment-card > .btn { margin-top: 4px; }
+@media (max-width: 600px) {
+  .dashboard-assessment-card { margin-bottom: 16px; }
+  .dashboard-assessment-card > .btn { width: 100%; }
+}

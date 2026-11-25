@@ -122,6 +122,11 @@ export function createCbtService(
   actor: Profile,
   clock = () => Date.now(),
 ) {
+  function simulationSource(state: CbtState, sourceId: string, subject: Exam["subject"]) {
+    const source = state.exams.find((e) => e.id === sourceId && e.teacher_id === actor.id && e.subject === subject && e.released && e.status === "closed");
+    ensure(source, "Pilih paket milik Anda yang sudah ditutup dan dirilis.", 409);
+    return source;
+  }
   return {
     preview: (subject: import("../../subjects").Subject) => {
       ensure(actor.role === "teacher", "Pratinjau soal hanya untuk guru.", 403);
@@ -139,6 +144,7 @@ export function createCbtService(
                   .filter((c) => c.teacher_id === actor.id)
                   .map((c) => ({ id: c.id, name: c.name }))
               : [],
+          simulationSources: actor.role === "teacher" ? state.exams.filter((e) => e.teacher_id === actor.id && e.released && e.status === "closed" && !e.simulation_source_id).map((e) => ({ id: e.id, subject: e.subject, title: e.title })) : [],
           exams: state.exams
             .filter((e) => !e.archived_at && visible(e, context, actor))
             .map((e) => {
@@ -199,7 +205,9 @@ export function createCbtService(
             403,
           );
           return {
-            items: prepareExamItems(input.subject, context, input.custom_csv),
+            items: input.simulation_source_id
+              ? simulationSource(state, input.simulation_source_id, input.subject).items
+              : prepareExamItems(input.subject, context, input.custom_csv),
           };
         }
         if (input.action === "publish") {
@@ -222,19 +230,19 @@ export function createCbtService(
             "Akhiri ujian lama sebelum membuat ujian berikutnya.",
             409,
           );
-          const items = prepareExamItems(
-            input.subject,
-            context,
-            input.custom_csv,
-          );
+          ensure(!input.simulation_source_id || !input.custom_csv, "Simulasi menggunakan paket lama, bukan CSV.", 400);
+          const source = input.simulation_source_id ? simulationSource(state, input.simulation_source_id, input.subject) : null;
+          const items = source
+            ? source.items.map((item) => ({ ...item, id: randomUUID() }))
+            : prepareExamItems(input.subject, context, input.custom_csv);
           const fingerprints = items.map(questionFingerprint);
           ensure(
-            !state.exams.some(
+            source || !state.exams.some(
               (e) =>
                 e.released &&
                 e.fingerprints.some((f) => fingerprints.includes(f)),
             ),
-            "Sebagian soal sudah pernah dirilis. Unggah 24 soal baru untuk gelombang berikutnya.",
+            "Sebagian soal sudah pernah dirilis. Gunakan mode simulasi atau unggah 24 soal baru untuk ujian resmi.",
             409,
           );
           const exam: Exam = {
@@ -242,7 +250,8 @@ export function createCbtService(
             teacher_id: actor.id,
             class_id: input.class_id,
             subject: input.subject,
-            title: input.title,
+            title: source ? ("Simulasi / Demo · " + input.title).slice(0, 120) : input.title,
+            ...(source ? { simulation_source_id: source.id } : {}),
             duration_minutes: input.duration_minutes,
             access_code: randomBytes(4).toString("hex").toUpperCase(),
             status: "open",
@@ -409,6 +418,7 @@ export function createCbtService(
           !state.exams.some(
             (e) =>
               e.id !== exam.id &&
+              !(exam.simulation_source_id && e.simulation_source_id) &&
               e.status === "open" &&
               e.fingerprints.some((f) => exam.fingerprints.includes(f)),
           ),

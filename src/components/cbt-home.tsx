@@ -26,6 +26,8 @@ export function CbtHome({ initial }: { initial: CbtList }) {
   const [subject, setSubject] = useState<Subject>("matematika");
   const [preview, setPreview] = useState<ExamItem[] | null>(null);
   const [customCsv, setCustomCsv] = useState("");
+  const [simulationSource, setSimulationSource] = useState("");
+  const sources = initial.simulationSources.filter((e) => e.subject === subject);
   useEffect(() => {
     const timer = setInterval(() => {
       if (!busy && !confirmation && document.visibilityState === "visible")
@@ -37,14 +39,15 @@ export function CbtHome({ initial }: { initial: CbtList }) {
     setBusy(true);
     setError("");
     try {
-      const r = customCsv
+      const r = customCsv || simulationSource
         ? await fetch("/api/cbt", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               action: "preview",
               subject,
-              custom_csv: customCsv,
+              custom_csv: simulationSource ? undefined : customCsv,
+              simulation_source_id: simulationSource || undefined,
             }),
           })
         : await fetch("/api/cbt?preview=" + subject, { cache: "no-store" });
@@ -147,7 +150,8 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                   subject: f.get("subject"),
                   title: f.get("title"),
                   duration_minutes: Number(f.get("duration")),
-                  custom_csv: customCsv || undefined,
+                  custom_csv: simulationSource ? undefined : customCsv || undefined,
+                  simulation_source_id: simulationSource || undefined,
                 });
               }}
             >
@@ -170,6 +174,7 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                   value={subject}
                   onChange={(e) => {
                     setSubject(e.target.value as Subject);
+                    setSimulationSource("");
                     setPreview(null);
                   }}
                 >
@@ -204,6 +209,14 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                 />
               </label>
               <label>
+                Jenis asesmen
+                <select value={simulationSource} disabled={busy} onChange={(e) => { setSimulationSource(e.target.value); setPreview(null); setCustomCsv(""); }}>
+                  <option value="">Ujian resmi (soal rahasia)</option>
+                  {sources.map((source) => <option key={source.id} value={source.id}>Simulasi / Demo — {source.title}</option>)}
+                </select>
+              </label>
+              {simulationSource && <p className="notice">Simulasi menggunakan paket yang kuncinya sudah pernah dirilis. Dapat diulang dengan kode ujian baru. Nilainya bukan nilai ujian resmi; riwayat lama tetap tersimpan.</p>}
+              {!simulationSource && <label>
                 CSV ujian baru (opsional)
                 <input
                   type="file"
@@ -222,12 +235,12 @@ export function CbtHome({ initial }: { initial: CbtList }) {
                     setCustomCsv(await file.text());
                   }}
                 />
-              </label>
+              </label>}
               <p className="small muted">
                 Paket bawaan tersedia untuk satu gelombang. Setelah kunci
                 dibuka, butir yang sama tidak dapat dipakai lagi sebagai ujian
                 rahasia. Untuk ujian berikutnya, unggah CSV berisi 24 soal baru
-                pada mapel ini; soal CSV ujian tidak masuk bank latihan.
+                pada mapel ini; soal CSV ujian tidak masuk bank latihan. Untuk demo, pilih paket yang sudah dirilis di Jenis asesmen.
               </p>
               <button
                 type="button"

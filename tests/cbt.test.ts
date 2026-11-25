@@ -50,6 +50,25 @@ describe("CBT: rahasia, waktu, identitas, dan idempotensi", () => {
       }),
     ).rejects.toMatchObject({ status: 409 });
   });
+  it("paket yang sudah dirilis dapat diulang sebagai simulasi tanpa menghapus riwayat atau membuka ujian resmi", async () => {
+    const l = await started();
+    const teacher = l.service(l.teacher);
+    await teacher.execute({ action: "close", exam_id: l.exam.id });
+    await teacher.execute({ action: "release", exam_id: l.exam.id });
+    const input = { action: "publish", reviewed: true, class_id: l.context.classes[0].id, subject: "bahasa-inggris", title: "Demo PKM", duration_minutes: 45, simulation_source_id: l.exam.id };
+    const first = await teacher.execute(input);
+    const second = await teacher.execute(input);
+    const exams = l.state().exams;
+    expect(first.exam_id).not.toBe(second.exam_id);
+    expect(exams).toHaveLength(3);
+    expect(exams[1].title).toMatch(/^Simulasi \/ Demo/);
+    expect(exams[1].simulation_source_id).toBe(l.exam.id);
+    expect(l.state().sittings).toHaveLength(1);
+    await teacher.execute({ action: "close", exam_id: first.exam_id });
+    await teacher.execute({ action: "release", exam_id: first.exam_id });
+    await expect(teacher.execute({ ...input, simulation_source_id: undefined })).rejects.toMatchObject({ status: 409 });
+    await expect(teacher.execute({ ...input, simulation_source_id: second.exam_id })).rejects.toMatchObject({ status: 409 });
+  });
   it("CSV privat valid dapat ditinjau, tetapi salah mapel, duplikat dan soal latihan ditolak", () => {
     const l = cbtLab();
     const items = examItems("matematika", l.context.topics);

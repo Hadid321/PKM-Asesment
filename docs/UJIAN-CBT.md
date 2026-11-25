@@ -59,3 +59,7 @@ Tambahan migration `20261110063036_assessment_activity_and_learning_briefs.sql` 
 ## Email Adaptiva
 
 Template konfirmasi sudah memakai identitas Adaptiva. Pengiriman bawaan Auth belum dapat memakai nama/alamat pengirim milik sekolah. Pengirim sendiri memerlukan custom SMTP dengan domain terverifikasi. Layanan bawaan memiliki pembatasan penerima/kuota dan tidak cocok untuk pendaftaran massal saat PKM. [Panduan resmi SMTP](https://supabase.com/docs/guides/auth/auth-smtp). Konfirmasi email tetap diaktifkan.
+
+## Simulasi / Demo berulang
+
+Pada halaman Asesmen pilih mapel, lalu Jenis asesmen > Simulasi / Demo dan paket milik guru yang telah ditutup serta dirilis (termasuk arsip). Tinjau paket, pilih kelas dan buka sesi baru. Setiap sesi memiliki kode dan riwayat tersendiri, dengan judul berawalan Simulasi / Demo; bukan nilai ujian resmi. Paket yang belum dirilis tidak dapat dipakai sebagai sumber simulasi. Ujian resmi tetap tidak dapat memakai soal yang sudah pernah dirilis. Tidak perlu menghapus atau mengubah nilai lama.

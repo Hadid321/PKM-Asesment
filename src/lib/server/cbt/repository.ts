@@ -105,9 +105,11 @@ export function cbtRepository(actor: Profile): CbtRepository {
           );
         if (commit.error?.message.includes("CBT_PACKET_EXPOSED"))
           throw new AppError(
-            "Sebagian soal sudah pernah dirilis. Siapkan 24 soal baru untuk gelombang berikutnya.",
+            "Sebagian soal sudah pernah dirilis. Pilih mode simulasi atau siapkan 24 soal baru untuk ujian resmi.",
             409,
           );
+        if (commit.error?.message.includes("CBT_SIMULATION_SOURCE"))
+          throw new AppError("Paket simulasi tidak cocok dengan asesmen yang sudah dirilis.", 409);
         if (commit.error?.message.includes("CBT_PRACTICE_OVERLAP"))
           throw new AppError(
             "Sebagian soal sudah tersedia dalam bank latihan sekolah. Gunakan 24 soal ujian baru yang belum dibuka kepada peserta.",

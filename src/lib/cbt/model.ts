@@ -29,6 +29,7 @@ export const examSchema = z.object({
   status: z.enum(["open", "closed"]),
   released: z.boolean(),
   archived_at: z.iso.datetime().optional(),
+  simulation_source_id: id.optional(),
   created_at: z.iso.datetime(),
   closed_at: z.iso.datetime().nullable(),
   focus_guard: z.boolean().optional(),
@@ -77,12 +78,14 @@ export const cbtInput = z.discriminatedUnion("action", [
     .object({
       action: z.literal("preview"),
       subject: z.enum(SUBJECTS),
+      simulation_source_id: id.optional(),
       custom_csv: z.string().max(500000).optional(),
     })
     .strict(),
   z
     .object({
       action: z.literal("publish"),
+      simulation_source_id: id.optional(),
       reviewed: z.literal(true),
       focus_guard: z.boolean().default(false),
       custom_csv: z.string().max(500000).optional(),
