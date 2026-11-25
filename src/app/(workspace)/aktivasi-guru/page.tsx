@@ -10,8 +10,8 @@ export default async function ActivateTeacher() {
   if (mode() !== "supabase") redirect("/dashboard");
   return <>
     <PageTitle eyebrow="AKUN SEKOLAH" title="Aktivasi akun guru" description="Gunakan kode undangan yang diberikan administrator sekolah." />
-    <Card className="narrow-card">
-      {actor.role === "teacher" ? <><p>Akun Anda sudah aktif sebagai guru.</p><Link href="/dashboard">Buka dashboard</Link></> :
+    <Card className="narrow-card teacher-access-card">
+      {actor.role === "teacher" ? <><p>Akun Anda sudah aktif sebagai guru.</p><Link className="btn secondary" href="/dashboard">Buka dashboard</Link></> :
         <><p className="muted">Pastikan email akun telah dikonfirmasi dan sesuai dengan email tujuan undangan.</p><TeacherAccessForm action="redeem" /></>}
     </Card>
   </>;

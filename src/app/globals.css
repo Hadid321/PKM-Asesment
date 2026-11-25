@@ -2854,3 +2854,113 @@ textarea {
     scroll-behavior: smooth;
   }
 }
+
+/* School administration and teacher activation: scoped layout spacing. */
+.teacher-access-page {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.teacher-access-narrow {
+  max-width: 760px;
+}
+.teacher-access-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  min-width: 0;
+}
+.teacher-access-heading {
+  display: grid;
+  gap: 8px;
+}
+.teacher-access-heading h2,
+.teacher-access-heading p,
+.teacher-access-card > p {
+  margin: 0;
+}
+.teacher-access-heading p,
+.teacher-access-row-main p {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.teacher-access-form {
+  gap: 16px;
+  min-width: 0;
+}
+.teacher-access-form label {
+  gap: 8px;
+  min-width: 0;
+}
+.teacher-access-form .form-error,
+.teacher-access-form .notice {
+  margin: 0;
+}
+.teacher-access-code {
+  display: grid;
+  gap: 12px;
+}
+.teacher-access-code p {
+  margin: 0;
+}
+.teacher-access-list {
+  display: grid;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+}
+.teacher-access-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.teacher-access-row + .teacher-access-row {
+  border-top: 1px solid var(--line);
+}
+.teacher-access-row-main {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.teacher-access-row-main p {
+  margin: 6px 0 0;
+}
+.teacher-access-row-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.teacher-access-revoke {
+  flex: 0 1 auto;
+  align-items: flex-start;
+}
+.teacher-access-empty {
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.teacher-access-footer {
+  display: flex;
+  justify-content: flex-start;
+}
+@media (max-width: 600px) {
+  .teacher-access-page { gap: 16px; }
+  .teacher-access-card { gap: 16px; padding: 18px; }
+  .teacher-access-row { padding: 12px; }
+  .teacher-access-row-main { flex-basis: 100%; }
+  .teacher-access-revoke, .teacher-access-revoke .btn { width: 100%; }
+  .teacher-access-footer .btn { width: 100%; }
+}
